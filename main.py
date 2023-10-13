@@ -33,8 +33,7 @@ def eliminar_producto(productos):
     for i, producto in enumerate(productos):
         print(f"{i + 1}. {producto['nombre']}")
 
-    choice = int(input("Selecciona el número del producto que deseas eliminar: ") - 1)
-
+    choice = int(input("Selecciona el número del producto que deseas eliminar: ")) - 1
 
     if 0 <= choice < len(productos):
         producto_eliminado = productos.pop(choice)
@@ -48,7 +47,7 @@ def modificar_producto(productos):
     for i, producto in enumerate(productos):
         print(f"{i + 1}. {producto['nombre']}")
 
-    choice = int(input("Selecciona el número del producto que deseas modificar: ") - 1)
+    choice = int(input("Selecciona el número del producto que deseas modificar: ")) - 1
 
     if 0 <= choice < len(productos):
         producto = productos[choice]
@@ -73,6 +72,74 @@ def modificar_producto(productos):
     else:
         print("Selección inválida.")
 
+# Función para la sección de caja de cobro
+def caja_de_cobro(productos):
+    caja = []
+    total = 0
+
+    while True:
+        print("\nOpciones de caja de cobro:")
+        print("1. Agregar producto a la caja")
+        print("2. Eliminar producto de la caja")
+        print("3. Hacer corte de caja")
+        print("4. Cobrar productos y salir")
+
+        opcion = input("Selecciona una opción: ")
+
+        if opcion == "1":
+            print("Productos disponibles:")
+            for i, producto in enumerate(productos):
+                print(f"{i + 1}. {producto['nombre']} - ${producto['precio']}")
+
+            choice = int(input("Selecciona el número del producto que deseas agregar a la caja: ")) - 1
+
+            if 0 <= choice < len(productos):
+                producto = productos[choice]
+                caja.append(producto)
+                total += producto["precio"]
+                print(f"{producto['nombre']} ha sido agregado a la caja.")
+            else:
+                print("Selección inválida.")
+        elif opcion == "2":
+            if not caja:
+                print("La caja está vacía.")
+            else:
+                print("Productos en la caja:")
+                for i, producto in enumerate(caja):
+                    print(f"{i + 1}. {producto['nombre']} - ${producto['precio']}")
+                choice = int(input("Selecciona el número del producto que deseas eliminar de la caja: ")) - 1
+                if 0 <= choice < len(caja):
+                    producto_eliminado = caja.pop(choice)
+                    total -= producto_eliminado["precio"]
+                    print(f"{producto_eliminado['nombre']} ha sido eliminado de la caja.")
+                else:
+                    print("Selección inválida.")
+        elif opcion == "3":
+            print(f"Total en la caja: ${total}")
+        elif opcion == "4":
+            if not caja:
+                print("La caja está vacía. No se puede realizar el cobro.")
+            else:
+                print(f"Total a cobrar: ${total}")
+                metodo_pago = input("Método de pago (efectivo/tarjeta): ")
+                if metodo_pago == "efectivo":
+                    pago_efectivo = float(input("Monto en efectivo: "))
+                    cambio = pago_efectivo - total
+                    if cambio < 0:
+                        print("El monto en efectivo es insuficiente.")
+                    else:
+                        print(f"¡Cambio: ${cambio}")
+                elif metodo_pago == "tarjeta":
+                    print("Por favor, verifique que el cobro se haya efectuado de manera correcta.")
+                    caja = []
+                    total = 0
+                else:
+                    print("Método de pago inválido.")
+                    continue
+            break
+        else:
+            print("Opción inválida.")
+
 # Función para guardar los productos en un archivo Excel
 def guardar_productos(productos):
     workbook = openpyxl.Workbook()
@@ -83,10 +150,10 @@ def guardar_productos(productos):
 
     # Agrega los productos al archivo Excel
     for producto in productos:
-        sheet.append(producto["nombre"], producto["precio"], producto["cantidad"])
+        sheet.append([producto["nombre"], producto["precio"], producto["cantidad"]])
+
 
     workbook.save("productos.xlsx")
-
 
 if __name__ == "__main__":
     tipo_usuario = login()
@@ -98,7 +165,8 @@ if __name__ == "__main__":
             print("1. Agregar producto")
             print("2. Eliminar producto")
             print("3. Modificar producto")
-            print("4. Guardar cambios y salir")
+            print("4. Caja de cobro")
+            print("5. Guardar cambios y salir")
 
             opcion = input("Selecciona una opción: ")
 
@@ -109,6 +177,8 @@ if __name__ == "__main__":
             elif opcion == "3":
                 modificar_producto(productos)
             elif opcion == "4":
+                caja_de_cobro(productos)
+            elif opcion == "5":
                 guardar_productos(productos)
                 break
             else:
