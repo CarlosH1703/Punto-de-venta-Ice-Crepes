@@ -35,13 +35,13 @@ def eliminar_producto(productos, tipo_usuario):
         if not productos:
             print("No hay productos para eliminar.")
             return
-        
+
         print("Productos disponibles:")
         for i, producto in enumerate(productos):
             print(f"{i + 1}. {producto['nombre']}")
-        
+
         choice = int(input("Selecciona el número del producto que deseas eliminar: ")) - 1
-        
+
         if 0 <= choice < len(productos):
             producto_eliminado = productos.pop(choice)
             print(f"{producto_eliminado['nombre']} ha sido eliminado del inventario.")
@@ -57,32 +57,32 @@ def modificar_producto(productos, tipo_usuario):
         if not productos:
             print("No hay productos para modificar.")
             return
-        
+
         print("Productos disponibles:")
         for i, producto in enumerate(productos):
             print(f"{i + 1}. {producto['nombre']}")
-        
+
         choice = int(input("Selecciona el número del producto que deseas modificar: ")) - 1
-        
+
         if 0 <= choice < len(productos):
             producto = productos[choice]
             print("Datos actuales del producto:")
             print(f"Nombre: {producto['nombre']}")
             print(f"Precio de venta: {producto['precio']}")
             print(f"Cantidad en inventario: {producto['cantidad']}")
-            
+
             nombre = input("Nuevo nombre (dejar en blanco para no cambiar): ")
             if nombre:
                 producto['nombre'] = nombre
-            
+
             precio = input("Nuevo precio de venta (dejar en blanco para no cambiar): ")
             if precio:
                 producto['precio'] = float(precio)
-            
+
             cantidad = input("Nueva cantidad en inventario (dejar en blanco para no cambiar): ")
             if cantidad:
                 producto['cantidad'] = int(cantidad)
-            
+
             print(f"{producto['nombre']} ha sido modificado en el inventario.")
             guardar_productos(productos)  # Actualizar el archivo Excel
         else:
