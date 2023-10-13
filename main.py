@@ -213,18 +213,18 @@ def guardar_venta(total, metodo_pago, caja, ventas):
         return
 
     fecha_actual = datetime.now().strftime("%Y-%m-%d")
-    archivo_ventas = f"ventas_{fecha_actual}.xlsx"
+    archivo_ventas = f"ventas_totales.xlsx"
 
     if not os.path.exists(archivo_ventas):
         workbook = openpyxl.Workbook()
         sheet = workbook.active
-        sheet.append(["ID Venta", "Productos", "Total Venta", "Método de Pago"])
+        sheet.append(["Fecha", "ID Venta", "Productos", "Total Venta", "Método de Pago"])
     else:
         workbook = openpyxl.load_workbook(archivo_ventas)
         sheet = workbook.active
 
     productos_vendidos = ", ".join(producto["nombre"] for producto in caja)
-    nueva_fila = [len(sheet["A"]) + 1, productos_vendidos, total, metodo_pago]
+    nueva_fila = [fecha_actual, len(sheet["A"]) + 1, productos_vendidos, total, metodo_pago]
     sheet.append(nueva_fila)
 
     workbook.save(archivo_ventas)
