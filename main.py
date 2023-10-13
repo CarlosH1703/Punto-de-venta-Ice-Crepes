@@ -16,6 +16,36 @@ def login():
         print("Credenciales incorrectas. Inténtalo de nuevo.")
         return None
 
+# Función para cargar productos desde un archivo Excel
+def cargar_productos():
+    productos = []
+    try:
+        workbook = openpyxl.load_workbook("productos.xlsx")
+        sheet = workbook.active
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            nombre, precio, cantidad = row
+            producto = {"nombre": nombre, "precio": precio, "cantidad": cantidad}
+            productos.append(producto)
+        print("Productos cargados exitosamente desde el archivo Excel.")
+    except FileNotFoundError:
+        print("El archivo de productos no existe. Debes agregar productos primero.")
+
+    return productos
+
+# Función para guardar los productos en un archivo Excel
+def guardar_productos(productos):
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+
+    # Encabezados
+    sheet.append(["Nombre", "Precio de Venta", "Cantidad en Inventario"])
+
+    # Agrega los productos al archivo Excel
+    for producto in productos:
+        sheet.append([producto["nombre"], producto["precio"], producto["cantidad"]])
+
+    workbook.save("productos.xlsx")
+
 # Función para agregar un producto
 def agregar_producto(productos):
     nombre = input("Nombre del producto: ")
@@ -27,8 +57,11 @@ def agregar_producto(productos):
 
     print(f"{nombre} ha sido agregado al inventario.")
 
-# Función para eliminar un producto
 def eliminar_producto(productos):
+    if not productos:
+        print("No hay productos para eliminar.")
+        return
+
     print("Productos disponibles:")
     for i, producto in enumerate(productos):
         print(f"{i + 1}. {producto['nombre']}")
@@ -38,11 +71,15 @@ def eliminar_producto(productos):
     if 0 <= choice < len(productos):
         producto_eliminado = productos.pop(choice)
         print(f"{producto_eliminado['nombre']} ha sido eliminado del inventario.")
+        guardar_productos(productos)  # Actualizar el archivo Excel
     else:
         print("Selección inválida.")
 
-# Función para modificar un producto
 def modificar_producto(productos):
+    if not productos:
+        print("No hay productos para modificar.")
+        return
+
     print("Productos disponibles:")
     for i, producto in enumerate(productos):
         print(f"{i + 1}. {producto['nombre']}")
@@ -69,6 +106,7 @@ def modificar_producto(productos):
             producto['cantidad'] = int(cantidad)
 
         print(f"{producto['nombre']} ha sido modificado en el inventario.")
+        guardar_productos(productos)  # Actualizar el archivo Excel
     else:
         print("Selección inválida.")
 
@@ -140,25 +178,10 @@ def caja_de_cobro(productos):
         else:
             print("Opción inválida.")
 
-# Función para guardar los productos en un archivo Excel
-def guardar_productos(productos):
-    workbook = openpyxl.Workbook()
-    sheet = workbook.active
-
-    # Encabezados
-    sheet.append(["Nombre", "Precio de Venta", "Cantidad en Inventario"])
-
-    # Agrega los productos al archivo Excel
-    for producto in productos:
-        sheet.append([producto["nombre"], producto["precio"], producto["cantidad"]])
-
-
-    workbook.save("productos.xlsx")
-
 if __name__ == "__main__":
     tipo_usuario = login()
     if tipo_usuario == "admin":
-        productos = []
+        productos = cargar_productos()
 
         while True:
             print("\nOpciones:")
