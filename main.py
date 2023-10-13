@@ -137,7 +137,7 @@ def caja_de_cobro(productos, tipo_usuario, ventas):
                 else:
                     print("Selección inválida.")
         elif opcion == "3":
-            print(f"Total en la caja: ${total}")
+            mostrar_ventas_dia(ventas)
         elif opcion == "4":
             if not caja:
                 print("La caja está vacía. No se puede realizar el cobro.")
@@ -149,6 +149,42 @@ def caja_de_cobro(productos, tipo_usuario, ventas):
             break
         else:
             print("Opción inválida.")
+
+# Función para mostrar las ventas del día
+def mostrar_ventas_dia(ventas):
+    fecha_actual = datetime.now().strftime("%Y-%m-%d")
+    print(f"Ventas del día ({fecha_actual}):")
+    ventas_del_dia = cargar_ventas(fecha_actual)
+
+    if not ventas_del_dia:
+        print("No hay ventas registradas para el día de hoy.")
+        return
+
+    for venta in ventas_del_dia:
+        print(f"ID Venta: {venta[1]}")
+        print(f"Productos: {venta[2]}")
+        print(f"Total Venta: ${venta[3]}")
+        print(f"Método de Pago: {venta[4]}")
+        print()
+
+# Función para cargar las ventas de una fecha específica
+def cargar_ventas(fecha):
+    try:
+        archivo_ventas = "ventas_totales.xlsx"
+        if not os.path.exists(archivo_ventas):
+            return []
+
+        workbook = openpyxl.load_workbook(archivo_ventas)
+        sheet = workbook.active
+        ventas = []
+
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            if row[0] == fecha:
+                ventas.append(row)
+
+        return ventas
+    except FileNotFoundError:
+        return []
 
 # Función para cobrar productos y calcular el cambio
 def cobrar(caja):
@@ -206,7 +242,7 @@ def cargar_productos():
     except FileNotFoundError:
         return []
 
-# Función para guardar la venta en un archivo Excel separado por fecha
+# Función para guardar la venta en un archivo Excel
 def guardar_venta(total, metodo_pago, caja, ventas):
     if not caja:
         print("No se puede guardar una venta vacía.")
