@@ -1,5 +1,7 @@
-import getpass
+import os
 import openpyxl
+import getpass
+from datetime import datetime
 
 # Función para el inicio de sesión
 def login():
@@ -26,6 +28,7 @@ def agregar_producto(productos, tipo_usuario):
         productos.append(producto)
 
         print(f"{nombre} ha sido agregado al inventario.")
+        guardar_productos(productos)
     else:
         print("Acceso denegado. Debes ser admin para agregar productos.")
 
@@ -45,7 +48,7 @@ def eliminar_producto(productos, tipo_usuario):
         if 0 <= choice < len(productos):
             producto_eliminado = productos.pop(choice)
             print(f"{producto_eliminado['nombre']} ha sido eliminado del inventario.")
-            guardar_productos(productos)  # Actualizar el archivo Excel
+            guardar_productos(productos)
         else:
             print("Selección inválida.")
     else:
@@ -84,14 +87,14 @@ def modificar_producto(productos, tipo_usuario):
                 producto['cantidad'] = int(cantidad)
 
             print(f"{producto['nombre']} ha sido modificado en el inventario.")
-            guardar_productos(productos)  # Actualizar el archivo Excel
+            guardar_productos(productos)
         else:
             print("Selección inválida.")
     else:
         print("Acceso denegado. Debes ser admin para modificar productos.")
 
 # Función para la sección de caja de cobro
-def caja_de_cobro(productos, tipo_usuario):
+def caja_de_cobro(productos, tipo_usuario, ventas):
     caja = []
     total = 0
 
@@ -139,29 +142,39 @@ def caja_de_cobro(productos, tipo_usuario):
             if not caja:
                 print("La caja está vacía. No se puede realizar el cobro.")
             else:
-                print(f"Total a cobrar: ${total}")
-                metodo_pago = input("Método de pago (efectivo/tarjeta): ")
-                if metodo_pago == "efectivo":
-                    pago_efectivo = float(input("Monto en efectivo: "))
-                    cambio = pago_efectivo - total
-                    if cambio < 0:
-                        print("El monto en efectivo es insuficiente.")
-                    else:
-                        print(f"¡Cambio: ${cambio}")
-                        caja = []  # Limpiar la caja después del cobro
-                        total = 0
-                elif metodo_pago == "tarjeta":
-                    print("Por favor, verifique que el cobro se haya efectuado de manera correcta.")
-                    caja = []  # Limpiar la caja después del cobro
-                    total = 0
-                else:
-                    print("Método de pago inválido.")
-                    continue
+                total_venta, metodo_pago = cobrar(caja)
+                guardar_venta(total_venta, metodo_pago, caja, ventas)
+                caja = []  # Limpiar la caja después del cobro
         elif opcion == "5":
             break
         else:
             print("Opción inválida.")
 
+# Función para cobrar productos y calcular el cambio
+def cobrar(caja):
+    if not caja:
+        print("La caja está vacía. No se puede realizar el cobro.")
+        return 0, "n/a"
+
+    total = sum(producto["precio"] for producto in caja)
+    print(f"Total a cobrar: ${total}")
+    metodo_pago = input("Método de pago (efectivo/tarjeta): ")
+
+    if metodo_pago == "efectivo":
+        pago_efectivo = float(input("Monto en efectivo: "))
+        cambio = pago_efectivo - total
+
+        if cambio < 0:
+            print("El monto en efectivo es insuficiente.")
+        else:
+            print(f"¡Cambio: ${cambio:.2f}")
+        return total, "efectivo"
+    elif metodo_pago == "tarjeta":
+        print("Por favor, verifique que el cobro se haya efectuado de manera correcta.")
+        return total, "tarjeta"
+    else:
+        print("Método de pago inválido.")
+        return 0, "n/a"
 
 # Función para guardar los productos en un archivo Excel
 def guardar_productos(productos):
@@ -193,9 +206,35 @@ def cargar_productos():
     except FileNotFoundError:
         return []
 
+# Función para guardar la venta en un archivo Excel separado por fecha
+def guardar_venta(total, metodo_pago, caja, ventas):
+    if not caja:
+        print("No se puede guardar una venta vacía.")
+        return
+
+    fecha_actual = datetime.now().strftime("%Y-%m-%d")
+    archivo_ventas = f"ventas_{fecha_actual}.xlsx"
+
+    if not os.path.exists(archivo_ventas):
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+        sheet.append(["ID Venta", "Productos", "Total Venta", "Método de Pago"])
+    else:
+        workbook = openpyxl.load_workbook(archivo_ventas)
+        sheet = workbook.active
+
+    productos_vendidos = ", ".join(producto["nombre"] for producto in caja)
+    nueva_fila = [len(sheet["A"]) + 1, productos_vendidos, total, metodo_pago]
+    sheet.append(nueva_fila)
+
+    workbook.save(archivo_ventas)
+
+    ventas.append(nueva_fila)  # Agregar la venta al registro de ventas
+
 if __name__ == "__main__":
     tipo_usuario = login()
     productos = cargar_productos()
+    ventas = []  # Lista para mantener el registro de ventas durante la sesión
 
     if tipo_usuario == "admin":
         while True:
@@ -215,7 +254,7 @@ if __name__ == "__main__":
             elif opcion == "3":
                 modificar_producto(productos, tipo_usuario)
             elif opcion == "4":
-                caja_de_cobro(productos, tipo_usuario)
+                caja_de_cobro(productos, tipo_usuario, ventas)
             elif opcion == "5":
                 guardar_productos(productos)
                 break
@@ -230,7 +269,7 @@ if __name__ == "__main__":
             opcion = input("Selecciona una opción: ")
 
             if opcion == "1":
-                caja_de_cobro(productos, tipo_usuario)
+                caja_de_cobro(productos, tipo_usuario, ventas)
             elif opcion == "2":
                 break
             else:
