@@ -96,7 +96,6 @@ def modificar_producto(productos, tipo_usuario):
 # Función para la sección de caja de cobro
 def caja_de_cobro(productos, tipo_usuario, ventas):
     caja = []
-    total = 0
 
     while True:
         print("\nOpciones de caja de cobro:")
@@ -118,7 +117,6 @@ def caja_de_cobro(productos, tipo_usuario, ventas):
             if 0 <= choice < len(productos):
                 producto = productos[choice]
                 caja.append(producto)
-                total += producto["precio"]
                 print(f"{producto['nombre']} ha sido agregado a la caja.")
             else:
                 print("Selección inválida.")
@@ -132,23 +130,39 @@ def caja_de_cobro(productos, tipo_usuario, ventas):
                 choice = int(input("Selecciona el número del producto que deseas eliminar de la caja: ")) - 1
                 if 0 <= choice < len(caja):
                     producto_eliminado = caja.pop(choice)
-                    total -= producto_eliminado["precio"]
                     print(f"{producto_eliminado['nombre']} ha sido eliminado de la caja.")
                 else:
                     print("Selección inválida.")
         elif opcion == "3":
+            # Mostrar las ventas del día
             mostrar_ventas_dia(ventas)
+
+            # Calcular el dinero total de las ventas
+            total_ventas = sum(venta[3] for venta in ventas)
+            print(f"Dinero total de las ventas: ${total_ventas:.2f}")
+
+            # Preguntar al usuario cuánto dinero había en caja
+            dinero_en_caja = float(input("Ingrese la cantidad de dinero en caja: $"))
+            diferencia = dinero_en_caja - total_ventas
+
+            print(f"Diferencia entre caja y ventas: ${diferencia:.2f}")
+
         elif opcion == "4":
             if not caja:
                 print("La caja está vacía. No se puede realizar el cobro.")
             else:
                 total_venta, metodo_pago = cobrar(caja)
                 guardar_venta(total_venta, metodo_pago, caja, ventas)
+                total_ventas += total_venta  # Actualizar el dinero total de las ventas
                 caja = []  # Limpiar la caja después del cobro
         elif opcion == "5":
             break
         else:
             print("Opción inválida.")
+
+
+
+
 
 # Función para mostrar las ventas del día
 def mostrar_ventas_dia(ventas):
