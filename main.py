@@ -3,6 +3,10 @@ import openpyxl
 import getpass
 from datetime import datetime
 
+# Variable para llevar un registro del dinero inicial en caja
+dinero_inicial_caja = 0
+
+
 # Función para el inicio de sesión
 def login():
     while True:
@@ -94,7 +98,7 @@ def modificar_producto(productos, tipo_usuario):
         print("Acceso denegado. Debes ser admin para modificar productos.")
 
 # Función para la sección de caja de cobro
-def caja_de_cobro(productos, tipo_usuario, ventas):
+def caja_de_cobro(productos, tipo_usuario, ventas, total_ventas):
     caja = []
 
     while True:
@@ -134,18 +138,10 @@ def caja_de_cobro(productos, tipo_usuario, ventas):
                 else:
                     print("Selección inválida.")
         elif opcion == "3":
-            # Mostrar las ventas del día
-            mostrar_ventas_dia(ventas)
-
-            # Calcular el dinero total de las ventas
-            total_ventas = sum(venta[3] for venta in ventas)
-            print(f"Dinero total de las ventas: ${total_ventas:.2f}")
-
-            # Preguntar al usuario cuánto dinero había en caja
-            dinero_en_caja = float(input("Ingrese la cantidad de dinero en caja: $"))
-            diferencia = dinero_en_caja - total_ventas
-
-            print(f"Diferencia entre caja y ventas: ${diferencia:.2f}")
+             total_ventas = mostrar_ventas_dia(ventas)  # Actualiza total_ventas con el valor calculado
+             dinero_en_caja = float(input("Ingrese la cantidad de dinero en caja: $"))
+             diferencia = dinero_en_caja - total_ventas
+             print(f"Diferencia entre caja y ventas: ${diferencia:.2f}")
 
         elif opcion == "4":
             if not caja:
@@ -161,9 +157,6 @@ def caja_de_cobro(productos, tipo_usuario, ventas):
             print("Opción inválida.")
 
 
-
-
-
 # Función para mostrar las ventas del día
 def mostrar_ventas_dia(ventas):
     fecha_actual = datetime.now().strftime("%Y-%m-%d")
@@ -174,12 +167,18 @@ def mostrar_ventas_dia(ventas):
         print("No hay ventas registradas para el día de hoy.")
         return
 
+    total_ventas_dia = sum(venta[3] for venta in ventas_del_dia)  # Calcula el total de las ventas del día
+
     for venta in ventas_del_dia:
         print(f"ID Venta: {venta[1]}")
         print(f"Productos: {venta[2]}")
         print(f"Total Venta: ${venta[3]}")
         print(f"Método de Pago: {venta[4]}")
         print()
+
+    print(f"Dinero total de las ventas: ${total_ventas_dia:.2f}")
+
+    return total_ventas_dia  # Devuelve el total de las ventas del día
 
 # Función para cargar las ventas de una fecha específica
 def cargar_ventas(fecha):
@@ -285,6 +284,7 @@ if __name__ == "__main__":
     tipo_usuario = login()
     productos = cargar_productos()
     ventas = []  # Lista para mantener el registro de ventas durante la sesión
+    total_ventas = 0  # Inicializa la variable total_ventas
 
     if tipo_usuario == "admin":
         while True:
@@ -304,7 +304,7 @@ if __name__ == "__main__":
             elif opcion == "3":
                 modificar_producto(productos, tipo_usuario)
             elif opcion == "4":
-                caja_de_cobro(productos, tipo_usuario, ventas)
+                caja_de_cobro(productos, tipo_usuario, ventas, total_ventas)
             elif opcion == "5":
                 guardar_productos(productos)
                 break
@@ -319,7 +319,7 @@ if __name__ == "__main__":
             opcion = input("Selecciona una opción: ")
 
             if opcion == "1":
-                caja_de_cobro(productos, tipo_usuario, ventas)
+                caja_de_cobro(productos, tipo_usuario, ventas, total_ventas)
             elif opcion == "2":
                 break
             else:
