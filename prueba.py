@@ -1,284 +1,325 @@
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
 from kivy.uix.button import Button
+from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
-from kivy.uix.popup import Popup
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.spinner import Spinner
 from kivy.uix.scrollview import ScrollView
-import openpyxl
+from kivy.uix.gridlayout import GridLayout
 import os
-import getpass
+import openpyxl
 from datetime import datetime
 
-class ProductManager(App):
-    def __init__(self, **kwargs):
-        super(ProductManager, self).__init__(**kwargs)
-        self.products = []
-        self.total_sales = 0
-        self.registered_products = []
-        self.dinero_inicial_caja = 0
-        self.user_type = None
-
+class InventoryApp(App):
     def build(self):
-        self.title = 'Sistema de Gestión de Productos'
-        self.layout = BoxLayout(orientation='vertical')
-        self.status_label = Label(text="Inicia sesión para continuar")
-        self.layout.add_widget(self.status_label)
+        self.title = "Gestión de Inventario"
+        
         self.username_input = TextInput(hint_text="Nombre de usuario")
         self.password_input = TextInput(hint_text="Contraseña", password=True)
-        login_button = Button(text="Iniciar Sesión")
-        login_button.bind(on_release=self.login)
-        self.layout.add_widget(self.username_input)
-        self.layout.add_widget(self.password_input)
-        self.layout.add_widget(login_button)
-        return self.layout
+        self.login_button = Button(text="Iniciar sesión", on_press=self.login)
 
+        self.add_product_button = Button(text="Agregar Producto", on_press=self.add_product)
+        self.delete_product_button = Button(text="Eliminar Producto", on_press=self.delete_product)
+        self.modify_product_button = Button(text="Modificar Producto", on_press=self.modify_product)
+        self.cashier_button = Button(text="Caja de Cobro", on_press=self.cashier)
+        self.result_label = Label()
+        self.scroll_view = ScrollView()
+        self.sales_label = Label()
+        self.products_label = Label()
+
+        self.productos = []  # Lista de productos
+        self.tipo_usuario = ""  # Tipo de usuario (admin o empleado)
+        self.ventas = []  # Registro de ventas
+        self.total_ventas = 0  # Total de ventas
+        self.dinero_inicial_caja = 0  # Dinero inicial en caja
+
+        layout = BoxLayout(orientation='vertical')
+        layout.add_widget(self.username_input)
+        layout.add_widget(self.password_input)
+        layout.add_widget(self.login_button)
+        layout.add_widget(self.add_product_button)
+        layout.add_widget(self.delete_product_button)
+        layout.add_widget(self.modify_product_button)
+        layout.add_widget(self.cashier_button)
+        layout.add_widget(self.result_label)
+        layout.add_widget(self.scroll_view)
+        layout.add_widget(self.sales_label)
+        layout.add_widget(self.products_label)
+        return layout
+
+    def mostrar_ventas_dia(self, ventas):
+        fecha_actual = datetime.now().strftime("%Y-%m-%d")
+        self.sales_label.text = f"Ventas del día ({fecha_actual}):\n"
+        ventas_del_dia = self.cargar_ventas(fecha_actual)
+
+        if not ventas_del_dia:
+            self.sales_label.text += "No hay ventas registradas para el día de hoy."
+            return
+
+        total_ventas_dia = sum(venta[3] for venta in ventas_del_dia)  # Calcula el total de las ventas del día
+
+        for venta in ventas_del_dia:
+            self.sales_label.text += f"ID Venta: {venta[1]}\n"
+            self.sales_label.text += f"Productos: {venta[2]}\n"
+            self.sales_label.text += f"Total Venta: ${venta[3]}\n"
+            self.sales_label.text += f"Método de Pago: {venta[4]}\n\n"
+
+        self.sales_label.text += f"Dinero total de las ventas: ${total_ventas_dia:.2f}"
+
+        return total_ventas_dia  # Devuelve el total de las ventas del día
+
+    def cobrar(self, caja):
+        if not caja:
+            self.result_label.text = "La caja está vacía. No se puede realizar el cobro."
+            return 0, "n/a"
+
+        total = sum(producto["precio"] for producto in caja)
+        self.result_label.text = f"Total a cobrar: ${total}"
+        metodo_pago = TextInput("Método de pago (efectivo/tarjeta): ")
+
+        if metodo_pago == "efectivo":
+            pago_efectivo = float(TextInput("Monto en efectivo: "))
+            cambio = pago_efectivo - total
+
+            if cambio < 0:
+                self.result_label.text = "El monto en efectivo es insuficiente."
+            else:
+                self.result_label.text = f"¡Cambio: ${cambio:.2f}"
+            return total, "efectivo"
+        elif metodo_pago == "tarjeta":
+            self.result_label.text = "Por favor, verifique que el cobro se haya efectuado de manera correcta."
+            return total, "tarjeta"
+        else:
+            self.result_label.text = "Método de pago inválido."
+            return 0, "n/a"
+
+        total = sum(producto["precio"] for producto in caja)
+        self.result_label.text = f"Total a cobrar: ${total}"
+        metodo_pago = TextInput("Método de pago (efectivo/tarjeta): ")
+
+        if metodo_pago == "efectivo":
+            pago_efectivo = float(TextInput("Monto en efectivo: "))
+            cambio = pago_efectivo - total
+
+            if cambio < 0:
+                self.result_label.text = "El monto en efectivo es insuficiente."
+            else:
+                self.result_label.text = f"¡Cambio: ${cambio:.2f}"
+            return total, "efectivo"
+        elif metodo_pago == "tarjeta":
+            self.result_label.text = "Por favor, verifique que el cobro se haya efectuado de manera correcta."
+            return total, "tarjeta"
+        else:
+            self.result_label.text = "Método de pago inválido."
+            return 0, "n/a"
+
+
+    # Función para el inicio de sesión
     def login(self, instance):
         username = self.username_input.text
         password = self.password_input.text
 
         if username == "admin" and password == "adminpass":
-            self.user_type = "admin"
-            self.show_admin_interface()
+            self.tipo_usuario = "admin"
+            self.dinero_inicial_caja = float(TextInput("Por favor, ingresa el efectivo inicial en caja: $"))
+            self.result_label.text = "Iniciaste sesión como administrador."
         elif username == "empleado" and password == "empleadopass":
-            self.user_type = "empleado"
-            self.show_employee_interface()
+            self.tipo_usuario = "empleado"
+            self.dinero_inicial_caja = float(TextInput("Por favor, ingresa el efectivo inicial en caja: $"))
+            self.result_label.text = "Iniciaste sesión como empleado."
         else:
-            self.show_error_popup("Credenciales incorrectas. Inténtalo de nuevo.")
+            self.result_label.text = "Credenciales incorrectas. Inténtalo de nuevo."
 
-    def show_admin_interface(self):
-        self.layout.clear_widgets()
-        self.admin_layout = BoxLayout(orientation='vertical')
-        self.admin_layout.add_widget(Label(text="Panel de Administrador"))
-        add_product_button = Button(text="Agregar Producto")
-        add_product_button.bind(on_release=self.add_product)
-        self.admin_layout.add_widget(add_product_button)
-        remove_product_button = Button(text="Eliminar Producto")
-        remove_product_button.bind(on_release=self.remove_product)
-        self.admin_layout.add_widget(remove_product_button)
-        modify_product_button = Button(text="Modificar Producto")
-        modify_product_button.bind(on_release=self.modify_product)
-        self.admin_layout.add_widget(modify_product_button)
-        cash_register_button = Button(text="Caja de Cobro")
-        cash_register_button.bind(on_release=self.cash_register)
-        self.admin_layout.add_widget(cash_register_button)
-        logout_button = Button(text="Cerrar Sesión")
-        logout_button.bind(on_release=self.logout)
-        self.admin_layout.add_widget(logout_button)
-        self.layout.add_widget(self.admin_layout)
-
-    def show_employee_interface(self):
-        self.layout.clear_widgets()
-        self.employee_layout = BoxLayout(orientation='vertical')
-        self.employee_layout.add_widget(Label(text="Panel de Empleado"))
-        cash_register_button = Button(text="Caja de Cobro")
-        cash_register_button.bind(on_release=self.cash_register)
-        self.employee_layout.add_widget(cash_register_button)
-        logout_button = Button(text="Cerrar Sesión")
-        logout_button.bind(on_release=self.logout)
-        self.employee_layout.add_widget(logout_button)
-        self.layout.add_widget(self.employee_layout)
-
+    # Función para agregar un producto
     def add_product(self, instance):
-        popup = Popup(title='Agregar Producto', auto_dismiss=False, size_hint=(0.4, 0.5))
-        content = BoxLayout(orientation='vertical')
-        name_input = TextInput(hint_text='Nombre del producto')
-        price_input = TextInput(hint_text='Precio de venta')
-        quantity_input = TextInput(hint_text='Cantidad en inventario')
-        add_button = Button(text='Agregar')
-        add_button.bind(on_release=lambda x: self.confirm_add_product(popup, name_input.text, price_input.text, quantity_input.text))
-        cancel_button = Button(text='Cancelar')
-        cancel_button.bind(on_release=popup.dismiss)
-        content.add_widget(name_input)
-        content.add_widget(price_input)
-        content.add_widget(quantity_input)
-        content.add_widget(add_button)
-        content.add_widget(cancel_button)
-        popup.content = content
-        popup.open()
+        if self.tipo_usuario == "admin":
+            nombre = TextInput("Nombre del producto: ")
+            precio = float(TextInput("Precio de venta: "))
+            cantidad = int(TextInput("Cantidad en inventario: "))
 
-    def confirm_add_product(self, popup, name, price, quantity):
-        if name and price and quantity:
-            product = {"nombre": name, "precio": float(price), "cantidad": int(quantity)}
-            self.products.append(product)
-            popup.dismiss()
+            producto = {"nombre": nombre, "precio": precio, "cantidad": cantidad}
+            self.productos.append(producto)
+            self.result_label.text = f"{nombre} ha sido agregado al inventario."
         else:
-            self.show_error_popup("Por favor, completa todos los campos.")
+            self.result_label.text = "Acceso denegado. Debes ser admin para agregar productos."
 
+    # Función para eliminar un producto
+    def delete_product(self, instance):
+        if self.tipo_usuario == "admin":
+            if not self.productos:
+                self.result_label.text = "No hay productos para eliminar."
+                return
 
-    def remove_product(self, instance):
-        if not self.products:
-            self.show_error_popup("No hay productos para eliminar.")
+            self.result_label.text = "Productos disponibles:\n"
+            for i, producto in enumerate(self.productos):
+                self.result_label.text += f"{i + 1}. {producto['nombre']}\n"
+
+            choice = int(TextInput("Selecciona el número del producto que deseas eliminar: ")) - 1
+
+            if 0 <= choice < len(self.productos):
+                producto_eliminado = self.productos.pop(choice)
+                self.result_label.text = f"{producto_eliminado['nombre']} ha sido eliminado del inventario."
+            else:
+                self.result_label.text = "Selección inválida."
         else:
-            popup = Popup(title='Eliminar Producto', auto_dismiss=False, size_hint=(0.4, 0.5))
-            content = BoxLayout(orientation='vertical')
-            product_names = [product["nombre"] for product in self.products]
-            product_spinner = Spinner(text=product_names[0], values=product_names)
-            remove_button = Button(text='Eliminar')
-            remove_button.bind(on_release=lambda x: self.confirm_remove_product(popup, product_spinner.text))
-            cancel_button = Button(text='Cancelar')
-            cancel_button.bind(on_release=popup.dismiss)
-            content.add_widget(product_spinner)
-            content.add_widget(remove_button)
-            content.add_widget(cancel_button)
-            popup.content = content
-            popup.open()
+            self.result_label.text = "Acceso denegado. Debes ser admin para eliminar productos."
 
-    def confirm_remove_product(self, popup, product_name):
-        product_to_remove = None
-        for product in self.products:
-            if product["nombre"] == product_name:
-                product_to_remove = product
-                break
-        if product_to_remove:
-            self.products.remove(product_to_remove)
-            self.save_products()  # Guardar productos en el archivo
-            popup.dismiss()
-        else:
-            self.show_error_popup("Producto no encontrado.")
-
+    # Función para modificar un producto
     def modify_product(self, instance):
-        if not self.products:
-            self.show_error_popup("No hay productos para modificar.")
-        else:
-            popup = Popup(title='Modificar Producto', auto_dismiss=False, size_hint=(0.4, 0.5))
-            content = BoxLayout(orientation='vertical')
-            product_names = [product["nombre"] for product in self.products]
-            product_spinner = Spinner(text=product_names[0], values=product_names)
-            modify_button = Button(text='Modificar')
-            modify_button.bind(on_release=lambda x: self.confirm_modify_product(popup, product_spinner.text))
-            cancel_button = Button(text='Cancelar')
-            cancel_button.bind(on_release=popup.dismiss)
-            content.add_widget(product_spinner)
-            content.add_widget(modify_button)
-            content.add_widget(cancel_button)
-            popup.content = content
-            popup.open()
+        if self.tipo_usuario == "admin":
+            if not self.productos:
+                self.result_label.text = "No hay productos para modificar."
+                return
 
-    def confirm_modify_product(self, popup, product_name):
-        for product in self.products:
-            if product["nombre"] == product_name:
-                self.modify_product_details(product)
+            self.result_label.text = "Productos disponibles:\n"
+            for i, producto in enumerate(self.productos):
+                self.result_label.text += f"{i + 1}. {producto['nombre']}\n"
+
+            choice = int(TextInput("Selecciona el número del producto que deseas modificar: ")) - 1
+
+            if 0 <= choice < len(self.productos):
+                producto = self.productos[choice]
+                self.result_label.text = "Datos actuales del producto:\n"
+                self.result_label.text += f"Nombre: {producto['nombre']}\n"
+                self.result_label.text += f"Precio de venta: {producto['precio']}\n"
+                self.result_label.text += f"Cantidad en inventario: {producto['cantidad']}\n"
+
+                nombre = TextInput("Nuevo nombre (dejar en blanco para no cambiar): ")
+                if nombre:
+                    producto['nombre'] = nombre
+
+                precio = TextInput("Nuevo precio de venta (dejar en blanco para no cambiar): ")
+                if precio:
+                    producto['precio'] = float(precio)
+
+                cantidad = TextInput("Nueva cantidad en inventario (dejar en blanco para no cambiar): ")
+                if cantidad:
+                    producto['cantidad'] = int(cantidad)
+
+                self.result_label.text = f"{producto['nombre']} ha sido modificado en el inventario."
+            else:
+                self.result_label.text = "Selección inválida."
+        else:
+            self.result_label.text = "Acceso denegado. Debes ser admin para modificar productos."
+
+    # Función para la sección de caja de cobro
+    def cashier(self, instance):
+        caja = []
+
+        while True:
+            self.result_label.text = "\nOpciones de caja de cobro:\n1. Agregar producto a la caja\n2. Eliminar producto de la caja\n3. Hacer corte de caja\n4. Cobrar productos y volver a la caja\n5. Salir de la caja"
+
+            opcion = TextInput("Selecciona una opción: ")
+
+            if opcion == "1":
+                self.result_label.text = "Productos disponibles:\n"
+                for i, producto in enumerate(self.productos):
+                    self.result_label.text += f"{i + 1}. {producto['nombre']} - ${producto['precio']}\n"
+
+                choice = int(TextInput("Selecciona el número del producto que deseas agregar a la caja: ")) - 1
+
+                if 0 <= choice < len(self.productos):
+                    producto = self.productos[choice]
+                    caja.append(producto)
+                    self.result_label.text = f"{producto['nombre']} ha sido agregado a la caja."
+                else:
+                    self.result_label.text = "Selección inválida."
+            elif opcion == "2":
+                if not caja:
+                    self.result_label.text = "La caja está vacía."
+                else:
+                    self.result_label.text = "Productos en la caja:\n"
+                    for i, producto in enumerate(caja):
+                        self.result_label.text += f"{i + 1}. {producto['nombre']} - ${producto['precio']}\n"
+                    choice = int(TextInput("Selecciona el número del producto que deseas eliminar de la caja: ")) - 1
+                    if 0 <= choice < len(caja):
+                        producto_eliminado = caja.pop(choice)
+                        self.result_label.text = f"{producto_eliminado['nombre']} ha sido eliminado de la caja."
+                    else:
+                        self.result_label.text = "Selección inválida."
+            elif opcion == "3":
+                total_ventas = self.mostrar_ventas_dia(self.ventas)  # Debes implementar mostrar_ventas_dia()
+                dinero_en_caja = float(TextInput("Ingrese la cantidad de dinero en caja: $"))
+                diferencia = dinero_en_caja - self.dinero_inicial_caja - total_ventas
+                self.result_label.text = f"Diferencia entre caja y ventas: ${diferencia:.2f}"
+            elif opcion == "4":
+                if not caja:
+                    self.result_label.text = "La caja está vacía. No se puede realizar el cobro."
+                else:
+                    total_venta, metodo_pago = self.cobrar(caja)  # Debes implementar la función cobrar()
+                    self.guardar_venta(total_venta, metodo_pago, caja)  # Debes implementar guardar_venta()
+                    self.total_ventas += total_venta  # Actualizar el dinero total de las ventas
+                    caja = []  # Limpiar la caja después del cobro
+                    self.result_label.text = f"Venta realizada por un total de ${total_venta:.2f} con {metodo_pago}."
+            elif opcion == "5":
                 break
-        self.save_products()  # Guardar productos en el archivo
-        popup.dismiss()
-
-    def modify_product_details(self, product):
-        popup = Popup(title='Modificar Detalles', auto_dismiss=False, size_hint=(0.4, 0.5))
-        content = BoxLayout(orientation='vertical')
-        name_label = Label(text='Nombre del producto: ' + product["nombre"])
-        price_input = TextInput(hint_text='Nuevo precio de venta')
-        quantity_input = TextInput(hint_text='Nueva cantidad en inventario')
-        modify_button = Button(text='Modificar')
-        modify_button.bind(on_release=lambda x: self.confirm_modify_details(product, price_input.text, quantity_input.text, popup))
-        cancel_button = Button(text='Cancelar')
-        cancel_button.bind(on_release=popup.dismiss)
-        content.add_widget(name_label)
-        content.add_widget(price_input)
-        content.add_widget(quantity_input)
-        content.add_widget(modify_button)
-        content.add_widget(cancel_button)
-        popup.content = content
-        popup.open()
-
-    def confirm_modify_details(self, product, new_price, new_quantity, popup):
-        if new_price:
-            product["precio"] = float(new_price)
-        if new_quantity:
-            product["cantidad"] = int(new_quantity)
-        popup.dismiss()
-
-    def cash_register(self, instance):
-        popup = Popup(title='Caja de Cobro', auto_dismiss=False, size_hint=(0.6, 0.7))
-        content = BoxLayout(orientation='vertical')
-        products_in_register = []
-        register_total = 0
-        product_layout = GridLayout(cols=3, spacing=10, size_hint_y=None)
-        product_layout.bind(minimum_height=product_layout.setter('height'))
-        for product in self.products:
-            product_name = product["nombre"]
-            product_price = product["precio"]
-            quantity = TextInput(hint_text='0', input_filter='int')
-            add_button = Button(text='+')
-            add_button.bind(on_release=lambda x, product=product: self.add_to_register(product, quantity.text))
-            product_layout.add_widget(Label(text=product_name))
-            product_layout.add_widget(Label(text=str(product_price)))
-            product_layout.add_widget(quantity)
-            product_layout.add_widget(add_button)
-        product_scrollview = ScrollView()
-        product_scrollview.add_widget(product_layout)
-        cash_label = Label(text=f'Total: ${register_total:.2f}')
-        complete_sale_button = Button(text='Completar Venta')
-        complete_sale_button.bind(on_release=lambda x: self.complete_sale(cash_label, popup))
-        cancel_button = Button(text='Cancelar')
-        cancel_button.bind(on_release=popup.dismiss)
-        content.add_widget(product_scrollview)
-        content.add_widget(cash_label)
-        content.add_widget(complete_sale_button)
-        content.add_widget(cancel_button)
-        popup.content = content
-        popup.open()
-
-    def add_to_register(self, product, quantity_str):
-        if quantity_str:
-            quantity = int(quantity_str)
-            if quantity > 0 and product["cantidad"] >= quantity:
-                product["cantidad"] -= quantity
-                self.register_total += product["precio"] * quantity
-                self.registered_products.append((product["nombre"], product["precio"], quantity))
-                self.show_success_popup(f'{quantity} {product["nombre"]} agregado(s) al registro.')
             else:
-                self.show_error_popup('Cantidad no válida o insuficiente en inventario.')
+                self.result_label.text = "Opción inválida."
+
+    # Función para mostrar las ventas del día
+    def mostrar_ventas_dia(self, ventas):
+        fecha_actual = datetime.now().strftime("%Y-%m-%d")
+        self.sales_label.text = f"Ventas del día ({fecha_actual}):\n"
+        ventas_del_dia = self.cargar_ventas(fecha_actual)
+
+        if not ventas_del_dia:
+            self.sales_label.text += "No hay ventas registradas para el día de hoy."
+            return
+
+        total_ventas_dia = sum(venta[3] for venta in ventas_del_dia)  # Calcula el total de las ventas del día
+
+        for venta in ventas_del_dia:
+            self.sales_label.text += f"ID Venta: {venta[1]}\n"
+            self.sales_label.text += f"Productos: {venta[2]}\n"
+            self.sales_label.text += f"Total Venta: ${venta[3]}\n"
+            self.sales_label.text += f"Método de Pago: {venta[4]}\n\n"
+
+        self.sales_label.text += f"Dinero total de las ventas: ${total_ventas_dia:.2f}"
+
+        return total_ventas_dia  # Devuelve el total de las ventas del día
+
+    # Función para cargar las ventas de una fecha específica
+    def cargar_ventas(self, fecha):
+        try:
+            archivo_ventas = "ventas_totales.xlsx"
+            if not os.path.exists(archivo_ventas):
+                return []
+
+            workbook = openpyxl.load_workbook(archivo_ventas)
+            sheet = workbook.active
+            ventas = []
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                if row[0] == fecha:
+                    ventas.append(row)
+
+            return ventas
+        except FileNotFoundError:
+            return []
+
+    # Función para guardar la venta en un archivo Excel
+    def guardar_venta(self, total, metodo_pago, caja):
+        if not caja:
+            self.result_label.text = "No se puede guardar una venta vacía."
+            return
+
+        fecha_actual = datetime.now().strftime("%Y-%m-%d")
+        archivo_ventas = f"ventas_totales.xlsx"
+
+        if not os.path.exists(archivo_ventas):
+            workbook = openpyxl.Workbook()
+            sheet = workbook.active
+            sheet.append(["Fecha", "ID Venta", "Productos", "Total Venta", "Método de Pago"])
         else:
-            self.show_error_popup('Cantidad no válida.')
+            workbook = openpyxl.load_workbook(archivo_ventas)
+            sheet = workbook.active
 
-    def complete_sale(self, cash_label, popup):
-        if self.registered_products:
-            cash_label.text = f'Total: ${self.register_total:.2f}'
-            popup.title = 'Completar Venta'
-            cash_label.text = f'Total: ${self.register_total:.2f}'
-            cash_input = TextInput(hint_text='Dinero recibido', input_filter='float')
-            accept_button = Button(text='Aceptar')
-            accept_button.bind(on_release=lambda x: self.accept_sale(cash_input.text, cash_label, popup))
-            cancel_button = Button(text='Cancelar')
-            cancel_button.bind(on_release=popup.dismiss)
-            cash_layout = BoxLayout(orientation='vertical')
-            cash_layout.add_widget(cash_input)
-            cash_layout.add_widget(accept_button)
-            cash_layout.add_widget(cancel_button)
-            popup.content = cash_layout
-        else:
-            self.show_error_popup('No hay productos en el registro.')
+        productos_vendidos = ", ".join(producto["nombre"] for producto in caja)
+        nueva_fila = [fecha_actual, len(sheet["A"]) + 1, productos_vendidos, total, metodo_pago]
+        sheet.append(nueva_fila)
 
-    def accept_sale(self, cash_received_str, cash_label, popup):
-        if cash_received_str:
-            cash_received = float(cash_received_str)
-            if cash_received >= self.register_total:
-                change = cash_received - self.register_total
-                self.total_sales += self.register_total
-                self.register_total = 0
-                self.registered_products = []
-                cash_label.text = f'Cambio: ${change:.2f}'
-                popup.title = 'Venta Completada'
-                self.show_success_popup(f'Venta completada. Cambio: ${change:.2f}')
-            else:
-                self.show_error_popup('El dinero recibido es insuficiente.')
-        else:
-            self.show_error_popup('Cantidad no válida.')
+        workbook.save(archivo_ventas)
 
-    def show_error_popup(self, message):
-        popup = Popup(title='Error', content=Label(text=message), size_hint=(None, None), size=(300, 150))
-        popup.open()
+        self.ventas.append(nueva_fila)  # Agregar la venta al registro de ventas
 
-    def show_success_popup(self, message):
-        popup = Popup(title='Éxito', content=Label(text=message), size_hint=(None, None), size=(300, 150))
-        popup.open()
-
-    def logout(self, instance):
-        self.layout.clear_widgets()
-        self.build()
-
-if __name__ == '__main__':
-    ProductManager().run()
+if __name__ == "__main__":
+    InventoryApp().run()
