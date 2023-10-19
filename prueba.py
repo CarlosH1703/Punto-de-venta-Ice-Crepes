@@ -5,6 +5,7 @@ import openpyxl
 import getpass
 from datetime import datetime
 
+
 # Variables globales
 dinero_inicial_caja = 0
 
@@ -29,11 +30,11 @@ def cargar_productos():
         return []
 
 # Función para el inicio de sesión
-def login():
+def login(cargar_productos, mostrar_ventas_dia, cobrar, ventas, guardar_venta, productos):
     global dinero_inicial_caja
 
     # Función para verificar las credenciales al inicio de sesión
-    def check_login(empleado_panel):
+    def check_login():
         username = username_entry.get()
         password = password_entry.get()
 
@@ -41,7 +42,7 @@ def login():
             dinero_inicial_caja = simpledialog.askfloat("Dinero Inicial", "Por favor, ingresa el efectivo inicial en caja: $")
             if dinero_inicial_caja is not None:
                 login_window.destroy()
-                admin_panel()
+                admin_panel(cargar_productos, mostrar_ventas_dia, cobrar, ventas, guardar_venta, productos)
             else:
                 messagebox.showwarning("Error", "Debes ingresar un valor válido para el dinero inicial.")
         elif username == "empleado" and password == "empleadopass":
@@ -65,14 +66,14 @@ def login():
     password_entry = tk.Entry(login_window, show="*")
     password_entry.pack()
 
-    login_button = tk.Button(login_window, text="Iniciar Sesión", command=lambda: admin_panel(cargar_productos))
+    login_button = tk.Button(login_window, text="Iniciar Sesión", command=check_login)
     login_button.pack()
 
     login_window.mainloop()
 
 
 # Función para el panel de administrador
-def admin_panel(cargar_productos):
+def admin_panel(cargar_productos, mostrar_ventas_dia, cobrar, ventas, guardar_venta, productos):
     admin_window = tk.Tk()
     admin_window.title("Panel de Administrador")
 
@@ -110,51 +111,86 @@ def admin_panel(cargar_productos):
         else:
             messagebox.showwarning("Error", "Por favor, ingresa valores válidos.")
 
-    # Función para eliminar un producto
+# Función para eliminar un producto
     def eliminar_producto():
+        def delete_product():
+            selected_product = combo.get()
+            if selected_product:
+                for producto in productos:
+                    if producto["nombre"] == selected_product:
+                        productos.remove(producto)
+                        guardar_productos()
+                        messagebox.showinfo("Éxito", f"{selected_product} ha sido eliminado del inventario.")
+                        eliminar_window.destroy()
+                        break
+
         if not productos:
             messagebox.showinfo("Información", "No hay productos para eliminar.")
-        else:
-            producto_names = [producto["nombre"] for producto in productos]
-            selected_product = simpledialog.askstring("Eliminar Producto", "Productos disponibles:", initialvalue="\n".join(producto_names))
+            return
 
-            if selected_product in producto_names:
-                index = producto_names.index(selected_product)
-                deleted_product = productos.pop(index)
-                guardar_productos()
-                messagebox.showinfo("Éxito", f"{deleted_product['nombre']} ha sido eliminado del inventario.")
-            else:
-                messagebox.showwarning("Error", "Producto no encontrado.")
+        eliminar_window = tk.Toplevel()
+        eliminar_window.title("Eliminar Producto")
 
-    # Función para modificar un producto
+        producto_names = [producto["nombre"] for producto in productos]
+        combo = tk.StringVar()
+        combo.set(producto_names[0])  # Valor inicial
+        combo_box = tk.OptionMenu(eliminar_window, combo, *producto_names)
+        combo_box.pack()
+
+        delete_button = tk.Button(eliminar_window, text="Eliminar Producto", command=delete_product)
+        delete_button.pack()
+
+
+   # Función para modificar un producto
     def modificar_producto():
-        if not productos:
-            messagebox.showinfo("Información", "No hay productos para modificar.")
-        else:
-            producto_names = [producto["nombre"] for producto in productos]
-            selected_product = simpledialog.askstring("Modificar Producto", "Productos disponibles:", initialvalue="\n".join(producto_names))
+        def apply_changes():
+            selected_product = combo.get()
+            modified_name = name_entry.get()
+            modified_price = price_entry.get()
+            modified_inventory = inventory_entry.get()
 
-            if selected_product in producto_names:
-                index = producto_names.index(selected_product)
-                selected_product_data = productos[index]
-                modified_data = simpledialog.askstring("Modificar Producto", f"Modificar {selected_product} (nombre/precio/cantidad):", initialvalue=f"{selected_product_data['nombre']}/{selected_product_data['precio']}/{selected_product_data['cantidad']}")
-
-                if modified_data:
-                    modified_data = modified_data.split('/')
-                    if len(modified_data) != 3:
-                        messagebox.showwarning("Error", "Ingresa los datos en el formato correcto (nombre/precio/cantidad).")
-                    else:
-                        productos[index] = {"nombre": modified_data[0], "precio": float(modified_data[1]), "cantidad": int(modified_data[2])}
+            if selected_product and modified_name and modified_price and modified_inventory:
+                for producto in productos:
+                    if producto["nombre"] == selected_product:
+                        producto["nombre"] = modified_name
+                        producto["precio"] = float(modified_price)
+                        producto["cantidad"] = int(modified_inventory)
                         guardar_productos()
                         messagebox.showinfo("Éxito", f"{selected_product} ha sido modificado en el inventario.")
-                else:
-                    messagebox.showwarning("Error", "Ingresa datos válidos.")
+                        modificar_window.destroy()
+                        break
 
-            else:
-                messagebox.showwarning("Error", "Producto no encontrado.")
+        if not productos:
+            messagebox.showinfo("Información", "No hay productos para modificar.")
+            return
 
+        modificar_window = tk.Toplevel()
+        modificar_window.title("Modificar Producto")
+
+        producto_names = [producto["nombre"] for producto in productos]
+        combo = tk.StringVar()
+        combo.set(producto_names[0])  # Valor inicial
+        combo_box = tk.OptionMenu(modificar_window, combo, *producto_names)
+        combo_box.pack()
+
+        tk.Label(modificar_window, text="Nuevo Nombre:").pack()
+        name_entry = tk.Entry(modificar_window)
+        name_entry.pack()
+
+        tk.Label(modificar_window, text="Nuevo Precio:").pack()
+        price_entry = tk.Entry(modificar_window)
+        price_entry.pack()
+
+        tk.Label(modificar_window, text="Nuevo Inventario:").pack()
+        inventory_entry = tk.Entry(modificar_window)
+        inventory_entry.pack()
+
+        apply_button = tk.Button(modificar_window, text="Aplicar Cambios", command=apply_changes)
+        apply_button.pack()
+
+    
     # Función para la sección de caja de cobro
-    def caja_de_cobro(mostrar_ventas_dia, cobrar, ventas, guardar_venta):
+    def caja_de_cobro(mostrar_ventas_dia, cobrar, ventas, guardar_venta, productos):
         caja = []
 
         while True:
@@ -199,16 +235,12 @@ def admin_panel(cargar_productos):
             elif opcion == opciones[4]:
                 break
 
-    # Coloca el resto de tu código para el panel de administrador aquí...
-
-        # Botones para agregar, eliminar y modificar productos
+    # Botones para agregar, eliminar y modificar productos
     tk.Button(admin_window, text="Agregar Producto", command=agregar_producto).pack()
     tk.Button(admin_window, text="Eliminar Producto", command=eliminar_producto).pack()
     tk.Button(admin_window, text="Modificar Producto", command=modificar_producto).pack()
-
-    # Botón para abrir la caja de cobro
-    tk.Button(admin_window, text="Caja de Cobro", command=caja_de_cobro).pack()
-
+    # Botón para abrir la caja de cobro en el panel de administrador
+    tk.Button(admin_window, text="Caja de Cobro", command=lambda: caja_de_cobro(mostrar_ventas_dia, cobrar, ventas, guardar_venta, productos)).pack()
     # Botón para guardar cambios y salir
     tk.Button(admin_window, text="Guardar Cambios y Salir", command=lambda: [guardar_productos(productos), admin_window.destroy()]).pack()
 
@@ -294,7 +326,7 @@ def empleado_panel():
         return 0, "n/a"
 
     # Función para la sección de caja de cobro
-    def caja_de_cobro(productos):
+    def caja_de_cobro(mostrar_ventas_dia, cobrar, ventas, guardar_venta, productos):
         caja = []
 
         while True:
