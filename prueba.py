@@ -1,173 +1,139 @@
 import tkinter as tk
 from tkinter import simpledialog, messagebox
+from tkinter import ttk
 import os
 import openpyxl
-import getpass
 from datetime import datetime
 
 
-# Variables globales
-dinero_inicial_caja = 0
+class PuntoDeVentaApp:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("Punto de Venta")
+        self.productos = self.cargar_productos()  # Esta línea está en el constructor __init__.
+        self.logged_in = False  # Variable para rastrear si se ha iniciado sesión
 
-# Función para cargar productos desde un archivo Excel
-def cargar_productos():
-    try:
-        archivo_productos = "productos.xlsx"
-        if not os.path.exists(archivo_productos):
+    def cargar_productos(self):
+        try:
+            archivo_productos = "productos.xlsx"
+            if not os.path.exists(archivo_productos):
+                return []
+
+            workbook = openpyxl.load_workbook(archivo_productos)
+            sheet = workbook.active
+            productos = []
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                nombre, precio, cantidad = row
+                producto = {"nombre": nombre, "precio": precio, "cantidad": cantidad}
+                productos.append(producto)
+
+            return productos
+        except FileNotFoundError:
             return []
 
-        workbook = openpyxl.load_workbook(archivo_productos)
-        sheet = workbook.active
-        productos = []
+    def iniciar_sesion(self):
+        login_frame = tk.Frame(self.root)
+        login_frame.pack()
+        tk.Label(login_frame, text="Nombre de usuario:").pack()
+        self.username_entry = tk.Entry(login_frame)
+        self.username_entry.pack()
+        tk.Label(login_frame, text="Contraseña:").pack()
+        self.password_entry = tk.Entry(login_frame, show="*")
+        self.password_entry.pack()
+        login_button = tk.Button(login_frame, text="Iniciar Sesión", command=self.check_login)
+        login_button.pack()
 
-        for row in sheet.iter_rows(min_row=2, values_only=True):
-            nombre, precio, cantidad = row
-            producto = {"nombre": nombre, "precio": precio, "cantidad": cantidad}
-            productos.append(producto)
-
-        return productos
-    except FileNotFoundError:
-        return []
-
-# Función para el inicio de sesión
-def login(cargar_productos, mostrar_ventas_dia, cobrar, ventas, guardar_venta, productos):
-    global dinero_inicial_caja
-
-    # Función para verificar las credenciales al inicio de sesión
-    def check_login():
-        username = username_entry.get()
-        password = password_entry.get()
+    def check_login(self):
+        username = self.username_entry.get()
+        password = self.password_entry.get()
 
         if username == "admin" and password == "adminpass":
-            dinero_inicial_caja = simpledialog.askfloat("Dinero Inicial", "Por favor, ingresa el efectivo inicial en caja: $")
-            if dinero_inicial_caja is not None:
-                login_window.destroy()
-                admin_panel(cargar_productos, mostrar_ventas_dia, cobrar, ventas, guardar_venta, productos)
+            dinero_inicial = simpledialog.askfloat("Dinero Inicial", "Por favor, ingresa el efectivo inicial en caja: $")
+            if dinero_inicial is not None:
+                self.dinero_inicial = dinero_inicial
+                self.logged_in = True  # Se ha iniciado sesión
+                self.admin_panel()
             else:
                 messagebox.showwarning("Error", "Debes ingresar un valor válido para el dinero inicial.")
         elif username == "empleado" and password == "empleadopass":
-            dinero_inicial_caja = simpledialog.askfloat("Dinero Inicial", "Por favor, ingresa el efectivo inicial en caja: $")
-            if dinero_inicial_caja is not None:
-                login_window.destroy()
-                empleado_panel()
+            dinero_inicial = simpledialog.askfloat("Dinero Inicial", "Por favor, ingresa el efectivo inicial en caja: $")
+            if dinero_inicial is not None:
+                self.dinero_inicial = dinero_inicial
+                self.logged_in = True  # Se ha iniciado sesión
+                self.empleado_panel()
             else:
                 messagebox.showwarning("Error", "Debes ingresar un valor válido para el dinero inicial.")
         else:
             messagebox.showerror("Error", "Credenciales incorrectas. Inténtalo de nuevo.")
 
-    login_window = tk.Tk()
-    login_window.title("Inicio de Sesión")
+    def admin_panel(self, dinero_inicial=None):
+        admin_window = tk.Toplevel(self.root)
+        admin_window.title("Panel de Administrador")
 
-    tk.Label(login_window, text="Nombre de usuario:").pack()
-    username_entry = tk.Entry(login_window)
-    username_entry.pack()
+        def on_closing():
+            admin_window.destroy()  # Cierra la ventana de administrador
 
-    tk.Label(login_window, text="Contraseña:").pack()
-    password_entry = tk.Entry(login_window, show="*")
-    password_entry.pack()
+        admin_window.protocol("WM_DELETE_WINDOW", on_closing)  # Configura el controlador de cierre
 
-    login_button = tk.Button(login_window, text="Iniciar Sesión", command=check_login)
-    login_button.pack()
+        tk.Button(admin_window, text="Agregar Producto", command=self.agregar_producto).pack()
+        tk.Button(admin_window, text="Eliminar Producto", command=self.eliminar_producto).pack()
+        tk.Button(admin_window, text="Modificar Producto", command=self.modificar_producto).pack()
+        tk.Button(admin_window, text="Caja de Cobro", command=self.caja_de_cobro).pack()
+        tk.Button(admin_window, text="Guardar Cambios y Salir", command=self.guardar_productos).pack()
 
-    login_window.mainloop()
+        admin_window.mainloop()
 
-
-# Función para el panel de administrador
-def admin_panel(cargar_productos, mostrar_ventas_dia, cobrar, ventas, guardar_venta, productos):
-    admin_window = tk.Tk()
-    admin_window.title("Panel de Administrador")
-
-    # Lista de productos
-    productos = cargar_productos()
-
-
-
-    # Función para guardar los productos en un archivo Excel
-    def guardar_productos():
-        archivo_productos = "productos.xlsx"
-        workbook = openpyxl.Workbook()
-        sheet = workbook.active
-
-        # Encabezados
-        sheet.append(["Nombre", "Precio de Venta", "Cantidad en Inventario"])
-
-        # Agrega los productos al archivo Excel
-        for producto in productos:
-            sheet.append([producto["nombre"], producto["precio"], producto["cantidad"]])
-
-        workbook.save(archivo_productos)
-
-    # Función para agregar un producto
-    def agregar_producto():
+    def agregar_producto(self):
         nombre = simpledialog.askstring("Agregar Producto", "Nombre del producto:")
         precio = simpledialog.askfloat("Agregar Producto", "Precio de venta:")
         cantidad = simpledialog.askinteger("Agregar Producto", "Cantidad en inventario:")
 
         if nombre and precio is not None and cantidad is not None:
             producto = {"nombre": nombre, "precio": precio, "cantidad": cantidad}
-            productos.append(producto)
-            guardar_productos()
+            self.productos.append(producto)
+            self.guardar_productos()
             messagebox.showinfo("Éxito", f"{nombre} ha sido agregado al inventario.")
         else:
             messagebox.showwarning("Error", "Por favor, ingresa valores válidos.")
 
-# Función para eliminar un producto
-    def eliminar_producto():
-        def delete_product():
-            selected_product = combo.get()
-            if selected_product:
-                for producto in productos:
-                    if producto["nombre"] == selected_product:
-                        productos.remove(producto)
-                        guardar_productos()
-                        messagebox.showinfo("Éxito", f"{selected_product} ha sido eliminado del inventario.")
-                        eliminar_window.destroy()
-                        break
-
-        if not productos:
+    def eliminar_producto(self):
+        if not self.productos:
             messagebox.showinfo("Información", "No hay productos para eliminar.")
             return
 
         eliminar_window = tk.Toplevel()
         eliminar_window.title("Eliminar Producto")
 
-        producto_names = [producto["nombre"] for producto in productos]
+        producto_names = [producto["nombre"] for producto in self.productos]
         combo = tk.StringVar()
         combo.set(producto_names[0])  # Valor inicial
         combo_box = tk.OptionMenu(eliminar_window, combo, *producto_names)
         combo_box.pack()
 
+        def delete_product():
+            selected_product = combo.get()
+            if selected_product:
+                for producto in self.productos:
+                    if producto["nombre"] == selected_product:
+                        self.productos.remove(producto)
+                        self.guardar_productos()
+                        messagebox.showinfo("Éxito", f"{selected_product} ha sido eliminado del inventario.")
+                        eliminar_window.destroy()
+                        break
+
         delete_button = tk.Button(eliminar_window, text="Eliminar Producto", command=delete_product)
         delete_button.pack()
 
-
-   # Función para modificar un producto
-    def modificar_producto():
-        def apply_changes():
-            selected_product = combo.get()
-            modified_name = name_entry.get()
-            modified_price = price_entry.get()
-            modified_inventory = inventory_entry.get()
-
-            if selected_product and modified_name and modified_price and modified_inventory:
-                for producto in productos:
-                    if producto["nombre"] == selected_product:
-                        producto["nombre"] = modified_name
-                        producto["precio"] = float(modified_price)
-                        producto["cantidad"] = int(modified_inventory)
-                        guardar_productos()
-                        messagebox.showinfo("Éxito", f"{selected_product} ha sido modificado en el inventario.")
-                        modificar_window.destroy()
-                        break
-
-        if not productos:
+    def modificar_producto(self):
+        if not self.productos:
             messagebox.showinfo("Información", "No hay productos para modificar.")
             return
 
         modificar_window = tk.Toplevel()
         modificar_window.title("Modificar Producto")
 
-        producto_names = [producto["nombre"] for producto in productos]
+        producto_names = [producto["nombre"] for producto in self.productos]
         combo = tk.StringVar()
         combo.set(producto_names[0])  # Valor inicial
         combo_box = tk.OptionMenu(modificar_window, combo, *producto_names)
@@ -185,78 +151,107 @@ def admin_panel(cargar_productos, mostrar_ventas_dia, cobrar, ventas, guardar_ve
         inventory_entry = tk.Entry(modificar_window)
         inventory_entry.pack()
 
+        def apply_changes():
+            selected_product = combo.get()
+            modified_name = name_entry.get()
+            modified_price = price_entry.get()
+            modified_inventory = inventory_entry.get()
+
+            if selected_product and modified_name and modified_price and modified_inventory:
+                for producto in self.productos:
+                    if producto["nombre"] == selected_product:
+                        producto["nombre"] = modified_name
+                        producto["precio"] = float(modified_price)
+                        producto["cantidad"] = int(modified_inventory)
+                        self.guardar_productos()
+                        messagebox.showinfo("Éxito", f"{selected_product} ha sido modificado en el inventario.")
+                        modificar_window.destroy()
+                        break
+
         apply_button = tk.Button(modificar_window, text="Aplicar Cambios", command=apply_changes)
         apply_button.pack()
 
-    
-    # Función para la sección de caja de cobro
-    def caja_de_cobro(mostrar_ventas_dia, cobrar, ventas, guardar_venta, productos):
+    def guardar_productos(self):
+        archivo_productos = "productos.xlsx"
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+
+        # Encabezados
+        sheet.append(["Nombre", "Precio de Venta", "Cantidad en Inventario"])
+
+        # Agrega los productos al archivo Excel
+        for producto in self.productos:
+            sheet.append([producto["nombre"], producto["precio"], producto["cantidad"]])
+
+        workbook.save(archivo_productos)
+
+    def caja_de_cobro(self):
         caja = []
 
         while True:
             opciones = ["Agregar producto a la caja", "Eliminar producto de la caja", "Hacer corte de caja", "Cobrar productos y volver a la caja", "Salir de la caja"]
-            opcion = simpledialog.askoption("Caja de Cobro", "Opciones de caja de cobro:", optionlist=opciones)
+            opcion = messagebox.askquestion("Caja de Cobro", "Opciones de caja de cobro:\n" + "\n".join(opciones))
 
-            if opcion == opciones[0]:
-                if productos:
-                    producto_names = [producto["nombre"] for producto in productos]
-                    selected_product = simpledialog.askstring("Agregar Producto", "Productos disponibles:", initialvalue="\n".join(producto_names))
+            if opcion == "yes":
+                # Opción de "Agregar producto a la caja"
+                if self.productos:
+                    producto_names = [producto["nombre"] for producto in self.productos]
+                    selected_product = messagebox.askquestion("Agregar Producto", "Productos disponibles:\n" + "\n".join(producto_names))
                     if selected_product in producto_names:
                         index = producto_names.index(selected_product)
-                        caja.append(productos.pop(index))
+                        caja.append(self.productos.pop(index))
                         messagebox.showinfo("Éxito", f"{selected_product} ha sido agregado a la caja.")
                     else:
                         messagebox.showwarning("Error", "Producto no encontrado.")
                 else:
                     messagebox.showinfo("Información", "No hay productos disponibles.")
-            elif opcion == opciones[1]:
+            elif opcion == "no":
+                # Opción de "Eliminar producto de la caja"
                 if not caja:
                     messagebox.showinfo("Información", "La caja está vacía.")
                 else:
-                    selected_product = simpledialog.askstring("Eliminar Producto", "Productos en la caja:", initialvalue="\n".join([producto["nombre"] for producto in caja]))
+                    selected_product = messagebox.askquestion("Eliminar Producto", "Productos en la caja:\n" + "\n".join([producto["nombre"] for producto in caja]))
                     if selected_product in [producto["nombre"] for producto in caja]:
                         index = [producto["nombre"] for producto in caja].index(selected_product)
                         removed_product = caja.pop(index)
-                        productos.append(removed_product)  # Devuelve el producto al inventario
+                        self.productos.append(removed_product)  # Devuelve el producto al inventario
                         messagebox.showinfo("Éxito", f"{removed_product['nombre']} ha sido eliminado de la caja.")
                     else:
-                        messagebox.showwarning("Error", "Producto no encontrado en la caja.")
-            elif opcion == opciones[2]:
-                total_ventas = mostrar_ventas_dia(ventas)
+                        messagebox.showwarning("Error", "Producto no encontrado in the caja.")
+            elif opcion == "cancel":
+                # Opción de "Hacer corte de caja"
+                total_ventas = self.mostrar_ventas_dia()
                 dinero_en_caja = simpledialog.askfloat("Corte de Caja", "Ingrese la cantidad de dinero en caja: $")
                 if dinero_en_caja is not None:
-                    diferencia = dinero_en_caja - dinero_inicial_caja - total_ventas
+                    diferencia = dinero_en_caja - self.dinero_inicial_caja - total_ventas
                     messagebox.showinfo("Corte de Caja", f"Diferencia entre caja y ventas: ${diferencia:.2f}")
-            elif opcion == opciones[3]:
-                total_venta, metodo_pago = cobrar(caja)
-                guardar_venta(total_venta, metodo_pago, caja)
-                total_ventas += total_venta
+            elif opcion == "ok":
+                # Opción de "Cobrar productos y volver a la caja"
+                total_venta, metodo_pago = self.cobrar(caja)
+                self.guardar_venta(total_venta, metodo_pago, caja)
                 caja = []
-            elif opcion == opciones[4]:
+            elif opcion == "Abort":
+                # Opción de "Salir de la caja"
                 break
 
-    # Botones para agregar, eliminar y modificar productos
-    tk.Button(admin_window, text="Agregar Producto", command=agregar_producto).pack()
-    tk.Button(admin_window, text="Eliminar Producto", command=eliminar_producto).pack()
-    tk.Button(admin_window, text="Modificar Producto", command=modificar_producto).pack()
-    # Botón para abrir la caja de cobro en el panel de administrador
-    tk.Button(admin_window, text="Caja de Cobro", command=lambda: caja_de_cobro(mostrar_ventas_dia, cobrar, ventas, guardar_venta, productos)).pack()
-    # Botón para guardar cambios y salir
-    tk.Button(admin_window, text="Guardar Cambios y Salir", command=lambda: [guardar_productos(productos), admin_window.destroy()]).pack()
+    def mostrar_ventas_dia(self):
+        fecha_actual = datetime.now().strftime("%Y-%m-d")
+        ventas_del_dia = self.cargar_ventas(fecha_actual)
 
-    admin_window.mainloop()
+        if not ventas_del_dia:
+            messagebox.showinfo("Información", "No hay ventas registradas para el día de hoy.")
+            return 0
 
+        total_ventas_dia = sum(venta[3] for venta in ventas_del_dia)
 
-# Función para el panel de empleado
-def empleado_panel():
-    empleado_window = tk.Tk()
-    empleado_window.title("Panel de Empleado")
+        venta_str = ""
+        for venta in ventas_del_dia:
+            venta_str += f"ID Venta: {venta[1]}\nProductos: {venta[2]}\nTotal Venta: ${venta[3]:.2f}\nMétodo de Pago: {venta[4]}\n\n"
 
-    # Lista para mantener el registro de ventas durante la sesión
-    ventas = []
+        messagebox.showinfo(f"Ventas del día ({fecha_actual})", venta_str + f"Dinero total de las ventas: ${total_ventas_dia:.2f}")
+        return total_ventas_dia
 
-    # Función para cargar las ventas de una fecha específica
-    def cargar_ventas(fecha):
+    def cargar_ventas(self, fecha):
         try:
             archivo_ventas = "ventas_totales.xlsx"
             if not os.path.exists(archivo_ventas):
@@ -274,8 +269,7 @@ def empleado_panel():
         except FileNotFoundError:
             return []
 
-    # Función para guardar la venta en un archivo Excel
-    def guardar_venta(total, metodo_pago, caja):
+    def guardar_venta(self, total, metodo_pago, caja):
         if not caja:
             messagebox.showwarning("Error", "No se puede guardar una venta vacía.")
             return
@@ -297,10 +291,9 @@ def empleado_panel():
 
         workbook.save(archivo_ventas)
 
-        ventas.append(nueva_fila)  # Agregar la venta al registro de ventas
+        self.ventas.append(nueva_fila)
 
-    # Función para cobrar productos y calcular el cambio
-    def cobrar(caja):
+    def cobrar(self, caja):
         if not caja:
             messagebox.showwarning("Error", "La caja está vacía. No se puede realizar el cobro.")
             return 0, "n/a"
@@ -325,72 +318,15 @@ def empleado_panel():
                 messagebox.showwarning("Error", "Método de pago inválido.")
         return 0, "n/a"
 
-    # Función para la sección de caja de cobro
-    def caja_de_cobro(mostrar_ventas_dia, cobrar, ventas, guardar_venta, productos):
-        caja = []
+    def empleado_panel(self):
+        empleado_window = tk.Toplevel(self.root)
+        empleado_window.title("Panel de Empleado")
 
-        while True:
-            opciones = ["Agregar producto a la caja", "Eliminar producto de la caja", "Hacer corte de caja", "Cobrar productos y volver a la caja", "Salir de la caja"]
-            opcion = simpledialog.askoption("Caja de Cobro", "Opciones de caja de cobro:", optionlist=opciones)
+        tk.Button(empleado_window, text="Caja de Cobro", command=self.caja_de_cobro).pack()
 
-            if opcion == opciones[0]:
-                if productos:
-                    producto_names = [producto["nombre"] for producto in productos]
-                    selected_product = simpledialog.askstring("Agregar Producto", "Productos disponibles:", initialvalue="\n".join(producto_names))
-                    if selected_product in producto_names:
-                        index = producto_names.index(selected_product)
-                        caja.append(productos.pop(index))
-                        messagebox.showinfo("Éxito", f"{selected_product} ha sido agregado a la caja.")
-                    else:
-                        messagebox.showwarning("Error", "Producto no encontrado.")
-                else:
-                    messagebox.showinfo("Información", "No hay productos disponibles.")
-            elif opcion == opciones[1]:
-                if not caja:
-                    messagebox.showinfo("Información", "La caja está vacía.")
-                else:
-                    selected_product = simpledialog.askstring("Eliminar Producto", "Productos en la caja:", initialvalue="\n".join([producto["nombre"] for producto in caja]))
-                    if selected_product in [producto["nombre"] for producto in caja]:
-                        index = [producto["nombre"] for producto in caja].index(selected_product)
-                        removed_product = caja.pop(index)
-                        messagebox.showinfo("Éxito", f"{removed_product['nombre']} ha sido eliminado de la caja.")
-                    else:
-                        messagebox.showwarning("Error", "Producto no encontrado en la caja.")
-            elif opcion == opciones[2]:
-                total_ventas = mostrar_ventas_dia(ventas)
-                dinero_en_caja = simpledialog.askfloat("Corte de Caja", "Ingrese la cantidad de dinero en caja: $")
-                if dinero_en_caja is not None:
-                    diferencia = dinero_en_caja - dinero_inicial_caja - total_ventas
-                    messagebox.showinfo("Corte de Caja", f"Diferencia entre caja y ventas: ${diferencia:.2f}")
-            elif opcion == opciones[3]:
-                total_venta, metodo_pago = cobrar(caja)
-                guardar_venta(total_venta, metodo_pago, caja)
-                total_ventas += total_venta
-                caja = []
-            elif opcion == opciones[4]:
-                break
-
-    # Función para mostrar las ventas del día
-    def mostrar_ventas_dia(ventas):
-        fecha_actual = datetime.now().strftime("%Y-%m-%d")
-        ventas_del_dia = cargar_ventas(fecha_actual)
-
-        if not ventas_del_dia:
-            messagebox.showinfo("Información", "No hay ventas registradas para el día de hoy.")
-            return 0
-
-        total_ventas_dia = sum(venta[3] for venta in ventas_del_dia)
-
-        venta_str = ""
-        for venta in ventas_del_dia:
-            venta_str += f"ID Venta: {venta[1]}\nProductos: {venta[2]}\nTotal Venta: ${venta[3]:.2f}\nMétodo de Pago: {venta[4]}\n\n"
-
-        messagebox.showinfo(f"Ventas del día ({fecha_actual})", venta_str + f"Dinero total de las ventas: ${total_ventas_dia:.2f}")
-        return total_ventas_dia
-
-    tk.Button(empleado_window, text="Caja de Cobro", command=caja_de_cobro).pack()
-
-    empleado_window.mainloop()
+        empleado_window.mainloop()
 
 if __name__ == "__main__":
-    login()
+    app = PuntoDeVentaApp()
+    app.iniciar_sesion()
+    app.root.mainloop()
