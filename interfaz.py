@@ -1,8 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
+from customtkinter import *
 import openpyxl
 import os
 from datetime import datetime
+
 
 # Variables globales
 productos = []
@@ -59,36 +61,107 @@ def iniciar_sesion(usuario, contrasena):
     mostrar_ventana_principal()
 
 # Ventana de Inicio de Sesión
+# Inicio de Sesión
+def iniciar_sesion(usuario, contrasena, ventana_login):
+    global tipo_usuario
+    if usuario == "admin" and contrasena == "adminpass":
+        tipo_usuario = "admin"
+    elif usuario == "empleado" and contrasena == "empleadopass":
+        tipo_usuario = "empleado"
+    else:
+        messagebox.showerror("Error", "Credenciales incorrectas")
+        return
+
+    # Establecer dinero inicial en caja
+    global dinero_inicial_caja
+    dinero_inicial_caja = float(simpledialog.askstring("Dinero Inicial", "Por favor, ingresa el efectivo inicial en caja: $", parent=ventana_login))
+
+    ventana_login.destroy()  # Cierra la ventana de inicio de sesión después de establecer el dinero inicial
+    mostrar_ventana_principal()
+
+# Ventana de Inicio de Sesión
 def mostrar_ventana_login():
     ventana_login = tk.Tk()
     ventana_login.title("Inicio de Sesión")
 
-    tk.Label(ventana_login, text="Nombre de usuario:").pack()
-    entry_usuario = tk.Entry(ventana_login)
-    entry_usuario.pack()
+    # Establecer un estilo
+    style = ttk.Style()
+    style.configure("TLabel", font=("Arial", 12))
+    style.configure("TButton", font=("Arial", 10), padding=5)
 
-    tk.Label(ventana_login, text="Contraseña:").pack()
-    entry_contrasena = tk.Entry(ventana_login, show="*")
-    entry_contrasena.pack()
+    # Usar Frame para una mejor organización
+    frame = ttk.Frame(ventana_login, padding="10 10 10 10")
+    frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-    tk.Button(ventana_login, text="Iniciar sesión", command=lambda: iniciar_sesion(entry_usuario.get(), entry_contrasena.get())).pack()
+    ttk.Label(frame, text="Nombre de usuario:").grid(column=0, row=0, sticky=tk.W)
+    entry_usuario = ttk.Entry(frame)
+    entry_usuario.grid(column=1, row=0, sticky=(tk.W, tk.E))
+
+    ttk.Label(frame, text="Contraseña:").grid(column=0, row=1, sticky=tk.W)
+    entry_contrasena = ttk.Entry(frame, show="*")
+    entry_contrasena.grid(column=1, row=1, sticky=(tk.W, tk.E))
+
+    ttk.Button(frame, text="Iniciar sesión", command=lambda: iniciar_sesion(entry_usuario.get(), entry_contrasena.get(), ventana_login)).grid(column=1, row=2, sticky=tk.E)
+
+    # Configurar el espaciado y expansión de la cuadrícula
+    for child in frame.winfo_children():
+        child.grid_configure(padx=5, pady=5)
+    ventana_login.columnconfigure(0, weight=1)
+    ventana_login.rowconfigure(0, weight=1)
+
     ventana_login.mainloop()
+
 
 # Ventana Principal
 def mostrar_ventana_principal():
     ventana_principal = tk.Tk()
     ventana_principal.title("Sistema de Gestión")
 
-    if tipo_usuario == "admin":
-        tk.Button(ventana_principal, text="Agregar Producto", command=agregar_producto).pack()
-        tk.Button(ventana_principal, text="Eliminar Producto", command=eliminar_producto).pack()
-        tk.Button(ventana_principal, text="Modificar Producto", command=modificar_producto).pack()
+    # Establecer un estilo
+    style = ttk.Style()
+    style.configure("TButton", font=("Arial", 10), padding=5)
 
-    tk.Button(ventana_principal, text="Caja de Cobro", command=lambda: caja_de_cobro(ventana_principal)).pack()
-    tk.Button(ventana_principal, text="Salir", command=ventana_principal.destroy).pack()
+    # Usar Frame para una mejor organización
+    frame = ttk.Frame(ventana_principal, padding="10 10 10 10")
+    frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+
+    if tipo_usuario == "admin":
+        ttk.Button(frame, text="Agregar Producto", command=agregar_producto).grid(column=0, row=0, sticky=(tk.W, tk.E))
+        ttk.Button(frame, text="Eliminar Producto", command=eliminar_producto).grid(column=1, row=0, sticky=(tk.W, tk.E))
+        ttk.Button(frame, text="Modificar Producto", command=modificar_producto).grid(column=2, row=0, sticky=(tk.W, tk.E))
+
+    ttk.Button(frame, text="Caja de Cobro", command=lambda: caja_de_cobro(ventana_principal)).grid(column=0, row=1, sticky=(tk.W, tk.E))
+    ttk.Button(frame, text="Salir", command=ventana_principal.destroy).grid(column=2, row=1, sticky=tk.E)
+
+    # Configurar el espaciado y expansión de la cuadrícula
+    for child in frame.winfo_children():
+        child.grid_configure(padx=5, pady=5)
+
+    ventana_principal.mainloop()
 
 # Función para agregar producto
 def agregar_producto():
+    ventana_agregar = tk.Toplevel()
+    ventana_agregar.title("Agregar Producto")
+
+    frame = ttk.Frame(ventana_agregar, padding="10 10 10 10")
+    frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+
+    ttk.Label(frame, text="Nombre del producto:").grid(column=0, row=0, sticky=tk.W)
+    entry_nombre = ttk.Entry(frame)
+    entry_nombre.grid(column=1, row=0, sticky=(tk.W, tk.E))
+
+    ttk.Label(frame, text="Precio de venta:").grid(column=0, row=1, sticky=tk.W)
+    entry_precio = ttk.Entry(frame)
+    entry_precio.grid(column=1, row=1, sticky=(tk.W, tk.E))
+
+    ttk.Label(frame, text="Cantidad en inventario:").grid(column=0, row=2, sticky=tk.W)
+    entry_cantidad = ttk.Entry(frame)
+    entry_cantidad.grid(column=1, row=2, sticky=(tk.W, tk.E))
+
+    ttk.Button(frame, text="Agregar", command=lambda: guardar_nuevo_producto()).grid(column=1, row=3, sticky=tk.E)
+
+    # Función interna para guardar el nuevo producto
     def guardar_nuevo_producto():
         nombre = entry_nombre.get()
         precio = float(entry_precio.get())
@@ -97,72 +170,95 @@ def agregar_producto():
         ventana_agregar.destroy()
         guardar_productos()
 
-    ventana_agregar = tk.Toplevel()
-    ventana_agregar.title("Agregar Producto")
+    # Configurar el espaciado y expansión de la cuadrícula
+    for child in frame.winfo_children():
+        child.grid_configure(padx=5, pady=5)
 
-    tk.Label(ventana_agregar, text="Nombre del producto:").pack()
-    entry_nombre = tk.Entry(ventana_agregar)
-    entry_nombre.pack()
-
-    tk.Label(ventana_agregar, text="Precio de venta:").pack()
-    entry_precio = tk.Entry(ventana_agregar)
-    entry_precio.pack()
-
-    tk.Label(ventana_agregar, text="Cantidad en inventario:").pack()
-    entry_cantidad = tk.Entry(ventana_agregar)
-    entry_cantidad.pack()
-
-    tk.Button(ventana_agregar, text="Agregar", command=guardar_nuevo_producto).pack()
 
 # Función para eliminar producto
+def actualizar_combobox_productos(event):
+    busqueda = entry_buscar.get().lower()
+    productos_filtrados = [producto["nombre"] for producto in productos if busqueda in producto["nombre"].lower()]
+    combo_productos['values'] = productos_filtrados
+    if productos_filtrados:
+        combo_productos.set(productos_filtrados[0])
+    else:
+        combo_productos.set('')
+
+def eliminar():
+    producto_seleccionado = combo_productos.get()
+    indice_a_eliminar = None
+    for indice, producto in enumerate(productos):
+        if producto["nombre"] == producto_seleccionado:
+            indice_a_eliminar = indice
+            break
+
+    if indice_a_eliminar is not None:
+        del productos[indice_a_eliminar]
+        guardar_productos()
+        actualizar_combobox_productos(None)
+    else:
+        messagebox.showwarning("Advertencia", "Por favor, selecciona un producto")
+
 def eliminar_producto():
+    global entry_buscar, combo_productos
     ventana_eliminar = tk.Toplevel()
     ventana_eliminar.title("Eliminar Producto")
 
-    # Crear un Combobox en lugar de un Listbox
-    nombres_productos = [producto["nombre"] for producto in productos]
-    combo_productos = ttk.Combobox(ventana_eliminar, values=nombres_productos)
-    combo_productos.pack()
+    frame = ttk.Frame(ventana_eliminar, padding="10 10 10 10")
+    frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-    def eliminar():
-        producto_seleccionado = combo_productos.get()
-        indice_a_eliminar = None
-        for indice, producto in enumerate(productos):
-            if producto["nombre"] == producto_seleccionado:
-                indice_a_eliminar = indice
-                break
+    ttk.Label(frame, text="Buscar Producto:").grid(column=0, row=0, sticky=tk.W)
+    entry_buscar = ttk.Entry(frame)
+    entry_buscar.grid(column=1, row=0, sticky=(tk.W, tk.E))
+    entry_buscar.bind('<KeyRelease>', actualizar_combobox_productos)
 
-        if indice_a_eliminar is not None:
-            del productos[indice_a_eliminar]
-            guardar_productos()
-            # Actualizar los valores del combobox
-            combo_productos['values'] = [producto["nombre"] for producto in productos]
-        else:
-            messagebox.showwarning("Advertencia", "Por favor, selecciona un producto")
+    combo_productos = ttk.Combobox(frame)
+    combo_productos.grid(column=1, row=1, sticky=(tk.W, tk.E))
 
-    tk.Button(ventana_eliminar, text="Eliminar", command=eliminar).pack()
+    ttk.Button(frame, text="Eliminar", command=eliminar).grid(column=1, row=2, sticky=tk.E)
+
+    for child in frame.winfo_children():
+        child.grid_configure(padx=5, pady=5)
 
 # Función para modificar producto
 def modificar_producto():
     ventana_modificar = tk.Toplevel()
     ventana_modificar.title("Modificar Producto")
 
-    # Crear un Combobox para seleccionar el producto a modificar
-    nombres_productos = [producto["nombre"] for producto in productos]
-    combo_productos = ttk.Combobox(ventana_modificar, values=nombres_productos)
-    combo_productos.pack()
+    frame = ttk.Frame(ventana_modificar, padding="10 10 10 10")
+    frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-    tk.Label(ventana_modificar, text="Nombre del producto:").pack()
-    entry_nombre = tk.Entry(ventana_modificar)
-    entry_nombre.pack()
+    ttk.Label(frame, text="Buscar Producto:").grid(column=0, row=0, sticky=tk.W)
+    entry_buscar = ttk.Entry(frame)
+    entry_buscar.grid(column=1, row=0, sticky=(tk.W, tk.E))
 
-    tk.Label(ventana_modificar, text="Precio de venta:").pack()
-    entry_precio = tk.Entry(ventana_modificar)
-    entry_precio.pack()
+    ttk.Label(frame, text="Selecciona un producto:").grid(column=0, row=1, sticky=tk.W)
+    combo_productos = ttk.Combobox(frame)
+    combo_productos.grid(column=1, row=1, sticky=(tk.W, tk.E))
 
-    tk.Label(ventana_modificar, text="Cantidad en inventario:").pack()
-    entry_cantidad = tk.Entry(ventana_modificar)
-    entry_cantidad.pack()
+    def actualizar_combobox_productos(event):
+        busqueda = entry_buscar.get().lower()
+        productos_filtrados = [producto["nombre"] for producto in productos if busqueda in producto["nombre"].lower()]
+        combo_productos['values'] = productos_filtrados
+        if productos_filtrados:
+            combo_productos.set(productos_filtrados[0])
+        else:
+            combo_productos.set('')
+
+    entry_buscar.bind('<KeyRelease>', actualizar_combobox_productos)
+
+    ttk.Label(frame, text="Nombre del producto:").grid(column=0, row=2, sticky=tk.W)
+    entry_nombre = ttk.Entry(frame)
+    entry_nombre.grid(column=1, row=2, sticky=(tk.W, tk.E))
+
+    ttk.Label(frame, text="Precio de venta:").grid(column=0, row=3, sticky=tk.W)
+    entry_precio = ttk.Entry(frame)
+    entry_precio.grid(column=1, row=3, sticky=(tk.W, tk.E))
+
+    ttk.Label(frame, text="Cantidad en inventario:").grid(column=0, row=4, sticky=tk.W)
+    entry_cantidad = ttk.Entry(frame)
+    entry_cantidad.grid(column=1, row=4, sticky=(tk.W, tk.E))
 
     def cargar_producto_para_modificar():
         producto_seleccionado = combo_productos.get()
@@ -175,8 +271,6 @@ def modificar_producto():
                 entry_cantidad.delete(0, tk.END)
                 entry_cantidad.insert(0, producto["cantidad"])
                 break
-
-    tk.Button(ventana_modificar, text="Cargar Producto", command=cargar_producto_para_modificar).pack()
 
     def guardar_cambios():
         indice_a_modificar = None
@@ -192,14 +286,18 @@ def modificar_producto():
                 "cantidad": int(entry_cantidad.get())
             }
             guardar_productos()
-            # Actualizar los valores del combobox
-            combo_productos['values'] = [producto["nombre"] for producto in productos]
+            actualizar_combobox_productos(None)  # Actualiza el combobox con los productos actualizados
             messagebox.showinfo("Éxito", "Producto modificado con éxito")
         else:
             messagebox.showwarning("Advertencia", "Por favor, selecciona un producto válido")
 
-    tk.Button(ventana_modificar, text="Guardar Cambios", command=guardar_cambios).pack()
+    ttk.Button(frame, text="Cargar Producto", command=cargar_producto_para_modificar).grid(column=0, row=5, sticky=tk.W)
+    ttk.Button(frame, text="Guardar Cambios", command=guardar_cambios).grid(column=1, row=5, sticky=tk.E)
 
+    for child in frame.winfo_children():
+        child.grid_configure(padx=5, pady=5)
+
+    actualizar_combobox_productos(None)  # Inicializa el combobox al abrir la ventana
 
 # Función para la caja de cobro
 def caja_de_cobro(ventana_padre):
@@ -207,7 +305,15 @@ def caja_de_cobro(ventana_padre):
     ventana_cobro = tk.Toplevel(ventana_padre)
     ventana_cobro.title("Caja de Cobro")
 
+    frame = ttk.Frame(ventana_cobro, padding="10 10 10 10")
+    frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+
     # Buscador de Productos
+    ttk.Label(frame, text="Buscar Producto:").grid(column=0, row=0, sticky=tk.W)
+    entry_buscar = ttk.Entry(frame)
+    entry_buscar.grid(column=1, row=0, sticky=(tk.W, tk.E))
+
+    # Implementación de la función actualizar_lista_productos
     def actualizar_lista_productos(event):
         busqueda = entry_buscar.get().lower()
         productos_filtrados = [producto for producto in productos if busqueda in producto["nombre"].lower()]
@@ -215,31 +321,20 @@ def caja_de_cobro(ventana_padre):
         for producto in productos_filtrados:
             lista_productos.insert(tk.END, producto["nombre"])
 
-    tk.Label(ventana_cobro, text="Buscar Producto:").pack()
-    entry_buscar = tk.Entry(ventana_cobro)
-    entry_buscar.pack()
     entry_buscar.bind('<KeyRelease>', actualizar_lista_productos)
 
-    lista_productos = tk.Listbox(ventana_cobro)
-    lista_productos.pack()
+    lista_productos = tk.Listbox(frame)
+    lista_productos.grid(column=0, row=1, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-# Etiqueta para mostrar el costo total
-    etiqueta_costo_total = tk.Label(ventana_cobro, text="Costo Total: $0.00")
-    etiqueta_costo_total.pack()
-
-    def actualizar_costo_total():
-        total = sum(p["precio"] for p in caja)
-        etiqueta_costo_total.config(text=f"Costo Total: ${total:.2f}")
+    # Etiqueta para mostrar el costo total
+    etiqueta_costo_total = ttk.Label(frame, text="Costo Total: $0.00")
+    etiqueta_costo_total.grid(column=0, row=2, sticky=tk.W)
 
     # Lista de Productos en Caja con Enumeración
-    lista_caja = tk.Listbox(ventana_cobro)
-    lista_caja.pack()
+    lista_caja = tk.Listbox(frame)
+    lista_caja.grid(column=0, row=3, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-    def actualizar_lista_caja():
-        lista_caja.delete(0, tk.END)
-        for indice, producto in enumerate(caja, start=1):
-            lista_caja.insert(tk.END, f"{indice}. {producto['nombre']}")
-
+    # Función para agregar productos a la caja
     def agregar_a_caja():
         seleccion = lista_productos.curselection()
         if seleccion:
@@ -248,9 +343,20 @@ def caja_de_cobro(ventana_padre):
             actualizar_lista_caja()
             actualizar_costo_total()
 
-    tk.Button(ventana_cobro, text="Agregar a Caja", command=agregar_a_caja).pack()
+    ttk.Button(frame, text="Agregar a Caja", command=agregar_a_caja).grid(column=1, row=4, sticky=tk.E)
 
-    # Método de Pago
+    # Función para actualizar el costo total
+    def actualizar_costo_total():
+        total = sum(p["precio"] for p in caja)
+        etiqueta_costo_total.config(text=f"Costo Total: ${total:.2f}")
+
+    # Función para actualizar la lista de productos en caja
+    def actualizar_lista_caja():
+        lista_caja.delete(0, tk.END)
+        for indice, producto in enumerate(caja, start=1):
+            lista_caja.insert(tk.END, f"{indice}. {producto['nombre']}")
+
+    # Funciones de Método de Pago
     def realizar_cobro(metodo_pago):
         total = sum(p["precio"] for p in caja)
         if metodo_pago == "efectivo":
@@ -263,9 +369,10 @@ def caja_de_cobro(ventana_padre):
         caja.clear()
         actualizar_lista_caja()
 
-    tk.Button(ventana_cobro, text="Pagar con Efectivo", command=lambda: realizar_cobro("efectivo")).pack()
-    tk.Button(ventana_cobro, text="Pagar con Tarjeta", command=lambda: realizar_cobro("tarjeta")).pack()
+    ttk.Button(frame, text="Pagar con Efectivo", command=lambda: realizar_cobro("efectivo")).grid(column=0, row=5, sticky=(tk.W, tk.E))
+    ttk.Button(frame, text="Pagar con Tarjeta", command=lambda: realizar_cobro("tarjeta")).grid(column=1, row=5, sticky=(tk.W, tk.E))
 
+    # Función para el corte de caja
     def corte_de_caja():
         try:
             workbook = openpyxl.load_workbook("ventas_totales.xlsx")
@@ -289,9 +396,13 @@ def caja_de_cobro(ventana_padre):
         except FileNotFoundError:
             messagebox.showerror("Error", "Archivo de ventas no encontrado.")
 
+    ttk.Button(frame, text="Corte de Caja", command=corte_de_caja).grid(column=1, row=6, sticky=tk.E)
 
+    for child in frame.winfo_children():
+        child.grid_configure(padx=5, pady=5)
 
-    tk.Button(ventana_cobro, text="Corte de Caja", command=corte_de_caja).pack()
+    ventana_cobro.columnconfigure(0, weight=1)
+    ventana_cobro.rowconfigure(1, weight=1)
 
 
 # Inicio del programa
