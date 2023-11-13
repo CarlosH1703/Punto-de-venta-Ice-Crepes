@@ -6,7 +6,6 @@ from datetime import datetime
 # Variable para llevar un registro del dinero inicial en caja
 dinero_inicial_caja = 0
 
-
 # Función para el inicio de sesión
 def login():
     global dinero_inicial_caja  # Accede a la variable global
@@ -102,7 +101,8 @@ def modificar_producto(productos, tipo_usuario):
         print("Acceso denegado. Debes ser admin para modificar productos.")
 
 # Función para la sección de caja de cobro
-def caja_de_cobro(productos, tipo_usuario, ventas, total_ventas):
+def caja_de_cobro(productos, tipo_usuario, ventas):
+    global total_ventas
     caja = []
 
     while True:
@@ -142,11 +142,10 @@ def caja_de_cobro(productos, tipo_usuario, ventas, total_ventas):
                 else:
                     print("Selección inválida.")
         elif opcion == "3":
-             total_ventas = mostrar_ventas_dia(ventas)  # Actualiza total_ventas con el valor calculado
-             dinero_en_caja = float(input("Ingrese la cantidad de dinero en caja: $"))
-             diferencia = dinero_en_caja - dinero_inicial_caja - total_ventas
-             print(f"Diferencia entre caja y ventas: ${diferencia:.2f}")
-
+            total_ventas = mostrar_ventas_dia(ventas)  # Actualiza total_ventas con el valor calculado
+            dinero_en_caja = float(input("Ingrese la cantidad de dinero en caja: $"))
+            diferencia = dinero_en_caja - dinero_inicial_caja - total_ventas
+            print(f"Diferencia entre caja y ventas: ${diferencia:.2f}")
         elif opcion == "4":
             if not caja:
                 print("La caja está vacía. No se puede realizar el cobro.")
@@ -159,7 +158,6 @@ def caja_de_cobro(productos, tipo_usuario, ventas, total_ventas):
             break
         else:
             print("Opción inválida.")
-
 
 # Función para mostrar las ventas del día
 def mostrar_ventas_dia(ventas):
