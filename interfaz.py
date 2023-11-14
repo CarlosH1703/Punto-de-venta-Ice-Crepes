@@ -3,7 +3,7 @@ from tkinter import messagebox, simpledialog, ttk
 import customtkinter as ctk
 import customtkinter
 import openpyxl
-import os
+import os, json, hashlib
 from datetime import datetime
 
 
@@ -27,6 +27,26 @@ def centrar_ventana(ventana):
     y_pos = ventana.winfo_screenheight() // 2 - alto_ventana // 2
     ventana.geometry(f"+{x_pos}+{y_pos}")
 
+def cargar_contraseñas():
+    try:
+        with open("usuarios.json", "r") as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"admin": cifrar_contrasena("adminpass"), "empleado": cifrar_contrasena("empleadopass")}
+
+def guardar_contraseñas(usuarios):
+    with open("usuarios.json", "w") as file:
+        json.dump(usuarios, file)
+
+def actualizar_contraseñas(contrasena_admin, contrasena_empleado):
+    usuarios = cargar_contraseñas()
+    usuarios["admin"] = cifrar_contrasena(contrasena_admin)
+    usuarios["empleado"] = cifrar_contrasena(contrasena_empleado)
+    guardar_contraseñas(usuarios)
+    messagebox.showinfo("Información", "Contraseñas actualizadas correctamente")
+
+def cifrar_contrasena(contrasena):
+    return hashlib.sha256(contrasena.encode()).hexdigest()
 
 # Funciones para interactuar con Excel
 def guardar_productos():
@@ -59,42 +79,39 @@ def guardar_venta(venta):
     sheet.append(venta)
     workbook.save(archivo_ventas)
 
-# Inicio de Sesión
-def iniciar_sesion(usuario, contrasena):
-    global tipo_usuario
-    if usuario == "admin" and contrasena == "adminpass":
-        tipo_usuario = "admin"
-    elif usuario == "empleado" and contrasena == "empleadopass":
-        tipo_usuario = "empleado"
-    else:
-        messagebox.showerror("Error", "Credenciales incorrectas")
-        return
-
-    # Establecer dinero inicial en caja
-    global dinero_inicial_caja
-    dinero_inicial_caja = float(simpledialog.askstring("Dinero Inicial", "Por favor, ingresa el efectivo inicial en caja: $"))
-
-    # Mostrar ventana principal
-    mostrar_ventana_principal()
-
 # Ventana de Inicio de Sesión
 # Inicio de Sesión
 def iniciar_sesion(usuario, contrasena, ventana_login):
-    global tipo_usuario
-    if usuario == "admin" and contrasena == "adminpass":
-        tipo_usuario = "admin"
-    elif usuario == "empleado" and contrasena == "empleadopass":
-        tipo_usuario = "empleado"
+    usuarios = cargar_contraseñas()
+    contrasena_cifrada = cifrar_contrasena(contrasena)
+    if usuario in usuarios and usuarios[usuario] == contrasena_cifrada:
+        global tipo_usuario
+        tipo_usuario = usuario
+        ventana_login.destroy()
+        mostrar_ventana_principal()
     else:
         messagebox.showerror("Error", "Credenciales incorrectas")
-        return
 
-    # Establecer dinero inicial en caja
-    global dinero_inicial_caja
-    dinero_inicial_caja = float(simpledialog.askstring("Dinero Inicial", "Por favor, ingresa el efectivo inicial en caja: $", parent=ventana_login))
+def ventana_modificar_contrasenas():
+    ventana_modificar = ctk.CTkToplevel()
+    ventana_modificar.title("Modificar Contraseñas")
+    centrar_ventana(ventana_modificar)
 
-    ventana_login.destroy()  # Cierra la ventana de inicio de sesión después de establecer el dinero inicial
-    mostrar_ventana_principal()
+    frame = ctk.CTkFrame(ventana_modificar)
+    frame.grid(row=0, column=0, sticky=("nsew"))
+
+    ctk.CTkLabel(frame, text="Nueva Contraseña Admin:").grid(row=0, column=0, sticky="w")
+    entry_admin = ctk.CTkEntry(frame)
+    entry_admin.grid(row=0, column=1, sticky="ew")
+
+    ctk.CTkLabel(frame, text="Nueva Contraseña Empleado:").grid(row=1, column=0, sticky="w")
+    entry_empleado = ctk.CTkEntry(frame)
+    entry_empleado.grid(row=1, column=1, sticky="ew")
+
+    ctk.CTkButton(frame, text="Actualizar", command=lambda: actualizar_contraseñas(entry_admin.get(), entry_empleado.get())).grid(row=2, column=1, sticky="e")
+
+    for child in frame.winfo_children():
+        child.grid_configure(padx=5, pady=5)
 
 # Ventana de Inicio de Sesión
 def mostrar_ventana_login():
@@ -102,19 +119,21 @@ def mostrar_ventana_login():
     ventana_login.title("Inicio de Sesión")
     centrar_ventana(ventana_login)
 
-    # Usar CTkFrame sin el argumento padding
     frame = ctk.CTkFrame(ventana_login)
-    frame.grid(row=0, column=0, sticky=(ctk.W, ctk.E, ctk.N, ctk.S))
+    frame.grid(row=0, column=0, sticky=("nsew"))
 
-    ctk.CTkLabel(frame, text="Nombre de usuario:").grid(column=0, row=0, sticky=ctk.W)
+    ctk.CTkLabel(frame, text="Nombre de usuario:").grid(row=0, column=0, sticky="w")
     entry_usuario = ctk.CTkEntry(frame)
-    entry_usuario.grid(column=1, row=0, sticky=(ctk.W, ctk.E))
+    entry_usuario.grid(row=0, column=1, sticky="ew")
 
-    ctk.CTkLabel(frame, text="Contraseña:").grid(column=0, row=1, sticky=ctk.W)
+    ctk.CTkLabel(frame, text="Contraseña:").grid(row=1, column=0, sticky="w")
     entry_contrasena = ctk.CTkEntry(frame, show="*")
-    entry_contrasena.grid(column=1, row=1, sticky=(ctk.W, ctk.E))
+    entry_contrasena.grid(row=1, column=1, sticky="ew")
 
-    ctk.CTkButton(frame, text="Iniciar sesión", command=lambda: iniciar_sesion(entry_usuario.get(), entry_contrasena.get(), ventana_login)).grid(column=1, row=2, sticky=ctk.E)
+    ctk.CTkButton(frame, text="Iniciar sesión", command=lambda: iniciar_sesion(entry_usuario.get(), entry_contrasena.get(), ventana_login)).grid(row=2, column=1, sticky="e")
+
+    for child in frame.winfo_children():
+        child.grid_configure(padx=5, pady=5)
 
     ventana_login.mainloop()
 
@@ -132,6 +151,7 @@ def mostrar_ventana_principal():
         ctk.CTkButton(frame, text="Agregar Producto", command=agregar_producto).grid(column=0, row=0, sticky=(ctk.W, ctk.E))
         ctk.CTkButton(frame, text="Eliminar Producto", command=eliminar_producto).grid(column=1, row=0, sticky=(ctk.W, ctk.E))
         ctk.CTkButton(frame, text="Modificar Producto", command=modificar_producto).grid(column=2, row=0, sticky=(ctk.W, ctk.E))
+        ctk.CTkButton(frame, text="Modificar Contraseñas", command=ventana_modificar_contrasenas).grid(column=3, row=0, sticky=("w", "e"))
 
     ctk.CTkButton(frame, text="Caja de Cobro", command=lambda: caja_de_cobro(ventana_principal)).grid(column=0, row=1, sticky=(ctk.W, ctk.E))
     ctk.CTkButton(frame, text="Salir", command=ventana_principal.destroy).grid(column=2, row=1, sticky=ctk.E)
