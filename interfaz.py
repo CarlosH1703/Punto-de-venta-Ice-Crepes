@@ -88,9 +88,13 @@ def iniciar_sesion(usuario, contrasena, ventana_login):
         global tipo_usuario
         tipo_usuario = usuario
         ventana_login.destroy()
+        global dinero_inicial_caja
+        dinero_inicial_caja = float(simpledialog.askstring("Dinero Inicial", "Por favor, ingresa el efectivo inicial en caja: $"))
         mostrar_ventana_principal()
     else:
         messagebox.showerror("Error", "Credenciales incorrectas")
+
+   
 
 def ventana_modificar_contrasenas():
     ventana_modificar = ctk.CTkToplevel()
@@ -154,7 +158,7 @@ def mostrar_ventana_principal():
         ctk.CTkButton(frame, text="Modificar Contraseñas", command=ventana_modificar_contrasenas).grid(column=3, row=0, sticky=("w", "e"))
 
     ctk.CTkButton(frame, text="Caja de Cobro", command=lambda: caja_de_cobro(ventana_principal)).grid(column=0, row=1, sticky=(ctk.W, ctk.E))
-    ctk.CTkButton(frame, text="Salir", command=ventana_principal.destroy).grid(column=2, row=1, sticky=ctk.E)
+    ctk.CTkButton(frame, text="Salir", command=ventana_principal.destroy).grid(column=3, row=1, sticky=ctk.E)
 
     ventana_principal.mainloop()
 
