@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 import customtkinter as ctk
+import customtkinter
 import openpyxl
 import os
 from datetime import datetime
@@ -13,6 +14,9 @@ tipo_usuario = None
 dinero_inicial_caja = 0
 entry_buscar = None  # Definir aquí para que sea accesible en todo el código
 combo_productos = None  # Definir aquí para que sea accesible en todo el código
+
+customtkinter.set_appearance_mode("light")  # Modes: system (default), light, dark
+customtkinter.set_default_color_theme("green")  # Themes: blue (default), dark-blue, green
 
 #funcion para centrar las ventanas
 def centrar_ventana(ventana):
@@ -314,20 +318,22 @@ def modificar_producto():
 
     actualizar_option_menu_modificar()
 
-# Función para la caja de cobro
 def caja_de_cobro(ventana_padre):
     caja = []
     ventana_cobro = ctk.CTkToplevel(ventana_padre)
     ventana_cobro.title("Caja de Cobro")
-    centrar_ventana(ventana_cobro)
+    ventana_cobro.state('zoomed')  # Pantalla completa
 
     frame = ctk.CTkFrame(ventana_cobro)
-    frame.grid(row=0, column=0, sticky=(ctk.W, ctk.E, ctk.N, ctk.S))
+    frame.grid(row=0, column=0, sticky="nsew")
+    ventana_cobro.grid_rowconfigure(0, weight=1)
+    ventana_cobro.grid_columnconfigure(0, weight=1)
 
     # Buscador de Productos
     ctk.CTkLabel(frame, text="Buscar Producto:").grid(column=0, row=0, sticky=ctk.W)
     entry_buscar = ttk.Entry(frame)
-    entry_buscar.grid(column=1, row=0, sticky=(ctk.W, ctk.E))
+    entry_buscar.grid(column=1, row=0, sticky="ew")
+    frame.grid_columnconfigure(1, weight=1)
 
     # Implementación de la función actualizar_lista_productos
     def actualizar_lista_productos(event):
@@ -340,7 +346,8 @@ def caja_de_cobro(ventana_padre):
     entry_buscar.bind('<KeyRelease>', actualizar_lista_productos)
 
     lista_productos = tk.Listbox(frame)
-    lista_productos.grid(column=0, row=1, columnspan=2, sticky=(ctk.W, ctk.E, ctk.N, ctk.S))
+    lista_productos.grid(column=0, row=1, columnspan=2, sticky="nsew")
+    frame.grid_rowconfigure(1, weight=1)
 
     # Etiqueta para mostrar el costo total
     etiqueta_costo_total = ctk.CTkLabel(frame, text="Costo Total: $0.00")
@@ -348,7 +355,8 @@ def caja_de_cobro(ventana_padre):
 
     # Lista de Productos en Caja con Enumeración
     lista_caja = tk.Listbox(frame)
-    lista_caja.grid(column=0, row=3, columnspan=2, sticky=(ctk.W, ctk.E, ctk.N, ctk.S))
+    lista_caja.grid(column=0, row=3, columnspan=2, sticky="nsew")
+    frame.grid_rowconfigure(3, weight=1)
 
     # Función para agregar productos a la caja
     def agregar_a_caja():
@@ -361,7 +369,9 @@ def caja_de_cobro(ventana_padre):
                 actualizar_lista_caja()
                 actualizar_costo_total()
 
-    ctk.CTkButton(frame, text="Agregar a Caja", command=agregar_a_caja).grid(column=0, row=4, sticky=ctk.E)
+    boton_agregar = ctk.CTkButton(frame, text="Agregar a Caja", command=agregar_a_caja)
+    boton_agregar.grid(column=0, row=4, sticky=ctk.E)
+
     #funcion para eliminar productos de la caja
     def eliminar_de_caja():
         seleccion = lista_caja.curselection()
@@ -370,7 +380,8 @@ def caja_de_cobro(ventana_padre):
             actualizar_lista_caja()
             actualizar_costo_total()
 
-    ctk.CTkButton(frame, text="Eliminar de Caja", command=eliminar_de_caja).grid(column=1, row=4, sticky=ctk.E)
+    boton_eliminar = ctk.CTkButton(frame, text="Eliminar de Caja", command=eliminar_de_caja)
+    boton_eliminar.grid(column=1, row=4, sticky=ctk.W)
 
     # Función para actualizar el costo total
     def actualizar_costo_total():
@@ -396,8 +407,12 @@ def caja_de_cobro(ventana_padre):
         caja.clear()
         actualizar_lista_caja()
 
-    ctk.CTkButton(frame, text="Pagar con Efectivo", command=lambda: realizar_cobro("efectivo")).grid(column=0, row=6, sticky=(ctk.W, ctk.E))
-    ctk.CTkButton(frame, text="Pagar con Tarjeta", command=lambda: realizar_cobro("tarjeta")).grid(column=1, row=6, sticky=(ctk.W, ctk.E))
+    # Funciones de Método de Pago y Corte de Caja
+    boton_efectivo = ctk.CTkButton(frame, text="Pagar con Efectivo", command=lambda: realizar_cobro("efectivo"))
+    boton_efectivo.grid(column=0, row=5, sticky=ctk.E)
+
+    boton_tarjeta = ctk.CTkButton(frame, text="Pagar con Tarjeta", command=lambda: realizar_cobro("tarjeta"))
+    boton_tarjeta.grid(column=1, row=5, sticky=ctk.W)
 
     # Función para el corte de caja
     def corte_de_caja():
@@ -423,7 +438,12 @@ def caja_de_cobro(ventana_padre):
         except FileNotFoundError:
             messagebox.showerror("Error", "Archivo de ventas no encontrado.")
 
-    ctk.CTkButton(frame, text="Corte de Caja", command=corte_de_caja).grid(column=1, row=7, sticky=ctk.E)
+    boton_corte_caja = ctk.CTkButton(frame, text="Corte de Caja", command=corte_de_caja)
+    boton_corte_caja.grid(column=1, row=6, sticky=ctk.E)
+
+    frame.grid_rowconfigure(4, weight=0)
+    frame.grid_rowconfigure(5, weight=0)
+    frame.grid_rowconfigure(6, weight=0)
 
     for child in frame.winfo_children():
         child.grid_configure(padx=5, pady=5)
