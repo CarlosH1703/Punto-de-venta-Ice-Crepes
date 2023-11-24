@@ -16,6 +16,7 @@ tipo_usuario = None
 dinero_inicial_caja = 0
 entry_buscar = None  # Definir aquí para que sea accesible en todo el código
 combo_productos = None  # Definir aquí para que sea accesible en todo el código
+ventana_principal = None  # Declaración global
 
 customtkinter.set_appearance_mode("light")  # Modes: system (default), light, dark
 customtkinter.set_default_color_theme("green")  # Themes: blue (default), dark-blue, green
@@ -92,7 +93,10 @@ def iniciar_sesion(usuario, contrasena, ventana_login):
         ventana_login.destroy()
         global dinero_inicial_caja
         dinero_inicial_caja = float(simpledialog.askstring("Dinero Inicial", "Por favor, ingresa el efectivo inicial en caja: $"))
-        mostrar_ventana_principal()
+        if tipo_usuario == "admin":
+            mostrar_ventana_principal()
+        elif tipo_usuario == "empleado":
+            mostrar_ventana_empleado()
     else:
         messagebox.showerror("Error", "Credenciales incorrectas")
 
@@ -102,6 +106,10 @@ def ventana_modificar_contrasenas():
     ventana_modificar = ctk.CTkToplevel()
     ventana_modificar.title("Modificar Contraseñas")
     centrar_ventana(ventana_modificar)
+
+    ventana_modificar.attributes('-topmost', 1)  # Configura la ventana como topmost
+    ventana_modificar.grab_set()  # Hace que la ventana sea modal
+    
 
     frame = ctk.CTkFrame(ventana_modificar)
     frame.grid(row=0, column=0, sticky=("nsew"))
@@ -136,6 +144,9 @@ def mostrar_ventana_login():
     ventana_login = ctk.CTk()
     ventana_login.title("Inicio de Sesión")
     ventana_login.geometry("800x400")
+
+    ventana_login.attributes('-topmost', 1)  # Configura la ventana como topmost
+    ventana_login.grab_set()  # Hace que la ventana sea modal
 
     # Configura el grid de la ventana para que los elementos se expandan proporcionalmente
     ventana_login.grid_columnconfigure(0, weight=2)  # Aumentar para empujar los widgets a la derecha
@@ -232,10 +243,14 @@ def mostrar_ventana_login():
 
 # Ventana Principal
 def mostrar_ventana_principal():
+    
     ventana_principal = ctk.CTk()
     ventana_principal.title("ADMINISTRADOR")
     ventana_principal.geometry("800x400")  # Ajusta esto si necesitas una ventana de diferente tamaño
     centrar_ventana(ventana_principal)
+
+    ventana_principal.attributes('-topmost', 1)  # Configura la ventana como topmost
+    ventana_principal.grab_set()  # Hace que la ventana sea modal
 
     # Configura el grid de la ventana para que los elementos se expandan proporcionalmente
     ventana_principal.grid_columnconfigure(0, weight=1)
@@ -286,11 +301,63 @@ def mostrar_ventana_principal():
 
     ventana_principal.mainloop()
 
+def mostrar_ventana_empleado():
+    ventana_empleado = ctk.CTk()
+    ventana_empleado.title("EMPLEADO")
+    ventana_empleado.geometry("800x400")  # Ajusta esto si necesitas una ventana de diferente tamaño
+    centrar_ventana(ventana_empleado)
+
+    ventana_empleado.attributes('-topmost', 1)  # Configura la ventana como topmost
+    ventana_empleado.grab_set()  # Hace que la ventana sea modal
+
+    # Configura el grid de la ventana para que los elementos se expandan proporcionalmente
+    ventana_empleado.grid_columnconfigure(0, weight=1)
+    ventana_empleado.grid_rowconfigure(0, weight=1)
+
+    frame = ctk.CTkFrame(ventana_empleado)
+    frame.grid(row=0, column=0, sticky="nsew")
+    frame.grid_columnconfigure(0, weight=1)
+    frame.grid_rowconfigure((0, 1), weight=1)
+
+    # Definición de los iconos para los botones
+    iconos = {
+        "Caja de Cobro": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/monitor.png",
+        "Salir": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/cerrar-sesion.png"
+    }
+
+    # Define los botones y sus respectivas funciones
+    botones_info = [
+        ("Caja de Cobro", lambda: caja_de_cobro(ventana_empleado)),
+        ("Salir", ventana_empleado.destroy)
+    ]
+
+    def cargar_icono_redimensionado(ruta, nuevo_ancho, nuevo_alto):
+        imagen = Image.open(ruta)
+        imagen_redimensionada = imagen.resize((nuevo_ancho, nuevo_alto), Image.LANCZOS)
+        return ImageTk.PhotoImage(imagen_redimensionada)
+
+    # Carga los iconos para los botones y redimensiona
+    tamanio_icono = (50, 50)  # Ejemplo: 50x50 píxeles
+    for i, (texto, comando) in enumerate(botones_info):
+        ruta_icono = iconos.get(texto, "")
+        icono = cargar_icono_redimensionado(ruta_icono, *tamanio_icono)
+        boton = ctk.CTkButton(frame, text=texto, command=comando, image=icono, compound="left")
+        boton.image = icono  # Guarda una referencia al icono para evitar la recolección de basura
+        
+        # Posicionamiento y configuración del botón
+        boton.grid(row=i, column=0, padx=10, pady=10, sticky="nsew")
+
+    ventana_empleado.mainloop()
+    
+
 # Función para agregar producto
 def agregar_producto():
     ventana_agregar = ctk.CTkToplevel()
     ventana_agregar.title("Agregar Producto")
     centrar_ventana(ventana_agregar)
+    
+    ventana_agregar.attributes('-topmost', 1)  # Configura la ventana como topmost
+    ventana_agregar.grab_set()  # Hace que la ventana sea modal
 
     frame = ctk.CTkFrame(ventana_agregar)
     frame.grid(row=0, column=0, sticky=(ctk.W, ctk.E, ctk.N, ctk.S))
@@ -363,6 +430,9 @@ def eliminar_producto():
     ventana_eliminar = ctk.CTkToplevel()
     ventana_eliminar.title("Eliminar Producto")
     centrar_ventana(ventana_eliminar)
+    
+    ventana_eliminar.attributes('-topmost', 1)  # Configura la ventana como topmost
+    ventana_eliminar.grab_set()  # Hace que la ventana sea modal
 
     frame = ctk.CTkFrame(ventana_eliminar)
     frame.grid(row=0, column=0, sticky=(ctk.W, ctk.E, ctk.N, ctk.S))
@@ -432,6 +502,9 @@ def modificar_producto():
     ventana_modificar = ctk.CTkToplevel()
     ventana_modificar.title("Modificar Producto")
     centrar_ventana(ventana_modificar)
+    
+    ventana_modificar.attributes('-topmost', 1)  # Configura la ventana como topmost
+    ventana_modificar.grab_set()  # Hace que la ventana sea modal
 
     frame_modificar = ctk.CTkFrame(ventana_modificar)
     frame_modificar.grid(row=0, column=0, sticky=(ctk.W, ctk.E, ctk.N, ctk.S))
@@ -476,6 +549,7 @@ def caja_de_cobro(ventana_padre):
     frame.grid(row=0, column=0, sticky="nsew")
     ventana_cobro.grid_rowconfigure(0, weight=1)
     ventana_cobro.grid_columnconfigure(0, weight=1)
+
 
     # Buscador de Productos
     ctk.CTkLabel(frame, text="Buscar Producto:").grid(column=0, row=0, sticky=ctk.W)
@@ -550,6 +624,9 @@ def caja_de_cobro(ventana_padre):
             if pago_cliente:
                 cambio = pago_cliente - total
                 messagebox.showinfo("Cambio", f"Cambio: ${cambio:.2f}")
+        elif metodo_pago == "tarjeta":
+            messagebox.showinfo("Pago", "Verificar el pago")
+
         fecha_actual = datetime.now().strftime("%Y-%m-%d")
         guardar_venta([fecha_actual, len(ventas)+1, ", ".join(p["nombre"] for p in caja), total, metodo_pago])
         caja.clear()
