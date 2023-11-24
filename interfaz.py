@@ -183,19 +183,34 @@ def mostrar_ventana_login():
 def mostrar_ventana_principal():
     ventana_principal = ctk.CTk()
     ventana_principal.title("ADMINISTRADOR")
+    ventana_principal.geometry("800x400")  # Ajusta esto si necesitas una ventana de diferente tamaño
     centrar_ventana(ventana_principal)
 
+    # Configura el grid de la ventana para que los elementos se expandan proporcionalmente
+    ventana_principal.grid_columnconfigure(0, weight=1)
+    ventana_principal.grid_rowconfigure(0, weight=1)
+
     frame = ctk.CTkFrame(ventana_principal)
-    frame.grid(row=0, column=0, sticky=(ctk.W, ctk.E, ctk.N, ctk.S))
+    frame.grid(row=0, column=0, sticky="nsew")
+    frame.grid_columnconfigure((0, 1), weight=1)
+    frame.grid_rowconfigure((0, 1, 2), weight=1)
 
-    if tipo_usuario == "admin":
-        ctk.CTkButton(frame, text="Agregar Producto", command=agregar_producto).grid(column=0, row=0, sticky=(ctk.W, ctk.E))
-        ctk.CTkButton(frame, text="Eliminar Producto", command=eliminar_producto).grid(column=1, row=0, sticky=(ctk.W, ctk.E))
-        ctk.CTkButton(frame, text="Modificar Producto", command=modificar_producto).grid(column=2, row=0, sticky=(ctk.W, ctk.E))
-        ctk.CTkButton(frame, text="Modificar Contraseñas", command=ventana_modificar_contrasenas).grid(column=3, row=0, sticky=("w", "e"))
+    # Define los botones y sus respectivas funciones
+    botones_info = [
+        ("Agregar Producto", agregar_producto),
+        ("Eliminar Producto", eliminar_producto),
+        ("Modificar Producto", modificar_producto),
+        ("Modificar Contraseñas", ventana_modificar_contrasenas),
+        ("Caja de Cobro", lambda: caja_de_cobro(ventana_principal)),
+        ("Salir", ventana_principal.destroy)
+    ]
 
-    ctk.CTkButton(frame, text="Caja de Cobro", command=lambda: caja_de_cobro(ventana_principal)).grid(column=0, row=1, sticky=(ctk.W, ctk.E))
-    ctk.CTkButton(frame, text="Salir", command=ventana_principal.destroy).grid(column=3, row=1, sticky=ctk.E)
+    # Crea y coloca los botones en la cuadrícula
+    for i, (texto, comando) in enumerate(botones_info):
+        boton = ctk.CTkButton(frame, text=texto, command=comando)
+        fila = i // 2  # Dos botones por fila
+        columna = i % 2  # Dos columnas
+        boton.grid(row=fila, column=columna, padx=10, pady=10, sticky="nsew")
 
     ventana_principal.mainloop()
 
