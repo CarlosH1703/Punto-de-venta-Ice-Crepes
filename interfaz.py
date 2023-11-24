@@ -5,6 +5,7 @@ import customtkinter
 import openpyxl
 import os, json, hashlib
 from datetime import datetime
+from PIL import Image, ImageTk
 
 
 # Variables globales
@@ -117,27 +118,63 @@ def ventana_modificar_contrasenas():
     for child in frame.winfo_children():
         child.grid_configure(padx=5, pady=5)
 
-# Ventana de Inicio de Sesión
 def mostrar_ventana_login():
+    global entry_usuario, entry_contrasena
     ventana_login = ctk.CTk()
     ventana_login.title("Inicio de Sesión")
-    centrar_ventana(ventana_login)
+    ventana_login.geometry("800x400")
 
-    frame = ctk.CTkFrame(ventana_login)
-    frame.grid(row=0, column=0, sticky=("nsew"))
+    # Configura el grid de la ventana para que los elementos se expandan proporcionalmente
+    ventana_login.grid_columnconfigure(0, weight=2)  # Aumentar para empujar los widgets a la derecha
+    ventana_login.grid_columnconfigure(1, weight=0)  # Columna de la línea no se expande
+    ventana_login.grid_columnconfigure(2, weight=1)  # Reducir para mover los widgets a la derecha
+    ventana_login.grid_rowconfigure(0, weight=1)
 
-    ctk.CTkLabel(frame, text="Nombre de usuario:").grid(row=0, column=0, sticky="w")
-    entry_usuario = ctk.CTkEntry(frame)
-    entry_usuario.grid(row=0, column=1, sticky="ew")
+    # Frame para la imagen del lado izquierdo
+    frame_imagen = ctk.CTkFrame(ventana_login)
+    frame_imagen.grid(row=0, column=0, sticky='nsew')
+    frame_imagen.grid_rowconfigure(0, weight=1)
+    frame_imagen.grid_columnconfigure(0, weight=1)
 
-    ctk.CTkLabel(frame, text="Contraseña:").grid(row=1, column=0, sticky="w")
-    entry_contrasena = ctk.CTkEntry(frame, show="*")
-    entry_contrasena.grid(row=1, column=1, sticky="ew")
+    # Cargar y mostrar la imagen
+    ruta_imagen = "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/10222 (1).png"
+    imagen = Image.open(ruta_imagen)
+    imagen = imagen.resize((350, 400), Image.Resampling.LANCZOS)
+    foto = ImageTk.PhotoImage(imagen)
+    label_imagen = ctk.CTkLabel(frame_imagen, image=foto, text="")
+    label_imagen.grid(row=0, column=0, sticky='nsew')
 
-    ctk.CTkButton(frame, text="Iniciar sesión", command=lambda: iniciar_sesion(entry_usuario.get(), entry_contrasena.get(), ventana_login)).grid(row=2, column=1, sticky="e")
+    # Canvas para la línea divisoria
+    canvas = ctk.CTkCanvas(ventana_login, width=2, height=400)
+    canvas.grid(row=0, column=1, sticky="ns")
+    canvas.create_line(1, 0, 1, 400, fill="gray")
 
-    for child in frame.winfo_children():
-        child.grid_configure(padx=5, pady=5)
+    # Frame central donde estarán los widgets de login
+    frame_central = ctk.CTkFrame(ventana_login)
+    frame_central.grid(row=0, column=2, sticky='nsew')
+    frame_central.grid_rowconfigure(1, weight=1)
+    frame_central.grid_rowconfigure(5, weight=2)
+    frame_central.grid_columnconfigure(0, weight=1)
+    frame_central.grid_columnconfigure(1, weight=1)
+
+    # Título de la sección de inicio de sesión
+    titulo_sesion = ctk.CTkLabel(frame_central, text="Iniciar Sesión", font=("Roboto", 24))
+    titulo_sesion.grid(row=1, column=0, columnspan=2, pady=(20, 20))
+
+    # Widgets de login
+    ctk.CTkLabel(frame_central, text="Usuario:").grid(row=2, column=0, sticky="e")
+    entry_usuario = ctk.CTkEntry(frame_central)
+    entry_usuario.grid(row=2, column=1, sticky="w", padx=20)
+
+    ctk.CTkLabel(frame_central, text="Contraseña:").grid(row=3, column=0, sticky="e")
+    entry_contrasena = ctk.CTkEntry(frame_central, show="*")
+    entry_contrasena.grid(row=3, column=1, sticky="w", padx=20)
+
+    boton_login = ctk.CTkButton(frame_central, text="Iniciar sesión", command=lambda: iniciar_sesion(entry_usuario.get(), entry_contrasena.get(), ventana_login))
+    boton_login.grid(row=4, column=0, columnspan=2, pady=10)
+
+    # Para mantener la referencia de la imagen
+    label_imagen.image = foto
 
     ventana_login.mainloop()
 
@@ -145,7 +182,7 @@ def mostrar_ventana_login():
 # Ventana Principal
 def mostrar_ventana_principal():
     ventana_principal = ctk.CTk()
-    ventana_principal.title("Sistema de Gestión")
+    ventana_principal.title("ADMINISTRADOR")
     centrar_ventana(ventana_principal)
 
     frame = ctk.CTkFrame(ventana_principal)
