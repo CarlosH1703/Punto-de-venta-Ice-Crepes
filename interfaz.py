@@ -82,7 +82,6 @@ def guardar_venta(venta):
     sheet.append(venta)
     workbook.save(archivo_ventas)
 
-# Ventana de Inicio de Sesión
 # Inicio de Sesión
 def iniciar_sesion(usuario, contrasena, ventana_login):
     usuarios = cargar_contraseñas()
@@ -119,6 +118,18 @@ def ventana_modificar_contrasenas():
 
     for child in frame.winfo_children():
         child.grid_configure(padx=5, pady=5)
+
+def on_entry_click(event, default_text, entry):
+    """Función que se llama cuando se hace clic en el Entry."""
+    if entry.get() == default_text:
+        entry.delete(0, "end")  # Borra el placeholder
+        entry.configure(fg_color="white")  # Cambia el color del texto
+
+def on_focusout(event, default_text, entry):
+    """Función que se llama cuando el Entry pierde el foco."""
+    if entry.get().strip() == '':
+        entry.insert(0, default_text)
+        entry.configure(fg_color="#white")  # Cambia el color del texto a gris
 
 def mostrar_ventana_login():
     global entry_usuario, entry_contrasena
@@ -161,19 +172,57 @@ def mostrar_ventana_login():
 
     # Título de la sección de inicio de sesión
     titulo_sesion = ctk.CTkLabel(frame_central, text="Iniciar Sesión", font=("Roboto", 24))
-    titulo_sesion.grid(row=1, column=0, columnspan=2, pady=(20, 20))
+    titulo_sesion.grid(row=0, column=0, columnspan=2, pady=(20, 20))
 
-    # Widgets de login
-    ctk.CTkLabel(frame_central, text="Usuario:").grid(row=2, column=0, sticky="e")
+    # Cargar y mostrar el icono TENGO QUE CAMBIARLO
+    ruta_icono = "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/usuario.png"  # Cambia esto a la ruta de tu icono
+    imagen_icono = Image.open(ruta_icono)
+    imagen_icono = imagen_icono.resize((50, 50), Image.Resampling.LANCZOS)  # Ajusta el tamaño según necesites
+    foto_icono = ImageTk.PhotoImage(imagen_icono)
+    label_icono = ctk.CTkLabel(frame_central, image=foto_icono, text="")
+    label_icono.grid(row=1, column=0, columnspan=2)  # Ajusta la fila según necesites
+    label_icono.image = foto_icono  # Guarda una referencia
+
+    # Cargar y mostrar el icono de usuario
+    ruta_icono_usuario = "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/grupo.png"  # Cambia esto a la ruta de tu icono de usuario
+    imagen_icono_usuario = Image.open(ruta_icono_usuario)
+    imagen_icono_usuario = imagen_icono_usuario.resize((30, 30), Image.Resampling.LANCZOS)  # Ajusta el tamaño según necesites
+    foto_icono_usuario = ImageTk.PhotoImage(imagen_icono_usuario)
+    label_icono_usuario = ctk.CTkLabel(frame_central, image=foto_icono_usuario, text="")
+    label_icono_usuario.grid(row=2, column=0, padx = (10, 0))
+    label_icono_usuario.image = foto_icono_usuario  # Guarda una referencia
+    
+    # Campo de entrada para el usuario
+    placeholder_usuario = "Usuario"
     entry_usuario = ctk.CTkEntry(frame_central)
-    entry_usuario.grid(row=2, column=1, sticky="w", padx=20)
+    entry_usuario.insert(0, placeholder_usuario)
+    entry_usuario.configure(cursor="xterm")
+    entry_usuario.configure(fg_color="white")
+    entry_usuario.bind("<FocusIn>", lambda event: on_entry_click(event, placeholder_usuario, entry_usuario))
+    entry_usuario.bind("<FocusOut>", lambda event: on_focusout(event, placeholder_usuario, entry_usuario))
+    entry_usuario.grid(row=2, column=1, sticky="w", padx=(0,20))
 
-    ctk.CTkLabel(frame_central, text="Contraseña:").grid(row=3, column=0, sticky="e")
+    # Cargar y mostrar el icono de contraseña
+    ruta_icono_contrasena = "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/candado.png"  # Cambia esto a la ruta de tu icono de contraseña
+    imagen_icono_contrasena = Image.open(ruta_icono_contrasena)
+    imagen_icono_contrasena = imagen_icono_contrasena.resize((30, 30), Image.Resampling.LANCZOS)  # Ajusta el tamaño según necesites
+    foto_icono_contrasena = ImageTk.PhotoImage(imagen_icono_contrasena)
+    label_icono_contrasena = ctk.CTkLabel(frame_central, image=foto_icono_contrasena, text="")
+    label_icono_contrasena.grid(row=3, column=0, padx =(10, 0))
+    label_icono_contrasena.image = foto_icono_contrasena  # Guarda una referencia
+
+    # Campo de entrada para la contraseña
+    placeholder_contrasena = "Contraseña"
     entry_contrasena = ctk.CTkEntry(frame_central, show="*")
-    entry_contrasena.grid(row=3, column=1, sticky="w", padx=20)
+    entry_contrasena.insert(0, placeholder_contrasena)
+    entry_contrasena.configure(cursor="xterm")
+    entry_contrasena.configure(fg_color="white")
+    entry_contrasena.bind("<FocusIn>", lambda event: on_entry_click(event, placeholder_contrasena, entry_contrasena))
+    entry_contrasena.bind("<FocusOut>", lambda event: on_focusout(event, placeholder_contrasena, entry_contrasena))
+    entry_contrasena.grid(row=3, column=1, sticky="w", padx=(0, 20))
 
     boton_login = ctk.CTkButton(frame_central, text="Iniciar sesión", command=lambda: iniciar_sesion(entry_usuario.get(), entry_contrasena.get(), ventana_login))
-    boton_login.grid(row=4, column=0, columnspan=2, pady=10)
+    boton_login.grid(row=4, column=0, columnspan=2, padx=(15,0), pady=10)
 
     # Para mantener la referencia de la imagen
     label_imagen.image = foto
