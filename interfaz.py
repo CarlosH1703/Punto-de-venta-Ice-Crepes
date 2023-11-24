@@ -1,7 +1,8 @@
 import tkinter as tk
-from tkinter import messagebox, simpledialog, ttk
+from tkinter import messagebox, simpledialog, ttk, PhotoImage
 import customtkinter as ctk
 import customtkinter
+from customtkinter import CTkImage
 import openpyxl
 import os, json, hashlib
 from datetime import datetime
@@ -18,6 +19,7 @@ combo_productos = None  # Definir aquí para que sea accesible en todo el códig
 
 customtkinter.set_appearance_mode("light")  # Modes: system (default), light, dark
 customtkinter.set_default_color_theme("green")  # Themes: blue (default), dark-blue, green
+ctk.set_widget_scaling(1.25)
 
 #funcion para centrar las ventanas
 def centrar_ventana(ventana):
@@ -195,6 +197,16 @@ def mostrar_ventana_principal():
     frame.grid_columnconfigure((0, 1), weight=1)
     frame.grid_rowconfigure((0, 1, 2), weight=1)
 
+   # Definición de los iconos para los botones
+    iconos = {
+        "Agregar Producto": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/boton-agregar.png",
+        "Eliminar Producto": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/contenedor-de-basura.png",
+        "Modificar Producto": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/editar.png",
+        "Modificar Contraseñas": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/rueda-dentada.png",
+        "Caja de Cobro": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/monitor.png",
+        "Salir": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/cerrar-sesion.png"
+    }
+
     # Define los botones y sus respectivas funciones
     botones_info = [
         ("Agregar Producto", agregar_producto),
@@ -205,9 +217,20 @@ def mostrar_ventana_principal():
         ("Salir", ventana_principal.destroy)
     ]
 
-    # Crea y coloca los botones en la cuadrícula
+    def cargar_icono_redimensionado(ruta, nuevo_ancho, nuevo_alto):
+        imagen = Image.open(ruta)
+        imagen_redimensionada = imagen.resize((nuevo_ancho, nuevo_alto), Image.LANCZOS)
+        return ImageTk.PhotoImage(imagen_redimensionada)
+
+    # Carga los iconos para los botones y redimensiona
+    tamanio_icono = (50, 50)  # Ejemplo: 50x50 píxeles
     for i, (texto, comando) in enumerate(botones_info):
-        boton = ctk.CTkButton(frame, text=texto, command=comando)
+        ruta_icono = iconos.get(texto, "")
+        icono = cargar_icono_redimensionado(ruta_icono, *tamanio_icono)
+        boton = ctk.CTkButton(frame, text=texto, command=comando, image=icono, compound="left")
+        boton.image = icono  # Guarda una referencia al icono para evitar la recolección de basura
+        
+        # Posicionamiento y configuración del botón
         fila = i // 2  # Dos botones por fila
         columna = i % 2  # Dos columnas
         boton.grid(row=fila, column=columna, padx=10, pady=10, sticky="nsew")
