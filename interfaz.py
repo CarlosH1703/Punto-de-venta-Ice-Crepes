@@ -7,6 +7,56 @@ import openpyxl
 import os, json, hashlib
 from datetime import datetime
 from PIL import Image, ImageTk
+from escpos.printer import Usb
+import win32print
+import win32ui
+
+def imprimir_ticket_windows(venta):
+    nombre_impresora = "POS-58"  # Reemplaza con el nombre exacto de tu impresora
+    hprinter = win32print.OpenPrinter(nombre_impresora)
+    try:
+        hjob = win32print.StartDocPrinter(hprinter, 1, ("Ticket de Venta", None, "RAW"))
+        try:
+            win32print.StartPagePrinter(hprinter)
+            
+            # Encabezado del ticket
+            encabezado = "*** Ice & Crepes ***\n"
+            encabezado += "Dirección de la Tienda\n"
+            encabezado += "-------------------------\n"
+            
+            # Datos de la venta
+            info_venta = f"Fecha: {venta['fecha']}\n"
+            info_venta += "Ticket No.: {:04d}\n".format(venta['ticket_numero'])
+            info_venta += "-------------------------\n"
+            
+            # Detalle de los productos
+            detalle_productos = "Cant Producto       P.Unit\n"
+            detalle_productos += "-------------------------\n"
+            for producto in venta['productos']:
+                detalle_productos += f"{producto['cantidad']:>4} {producto['nombre'][:15]:<15} {producto['precio']:>6.2f}\n"
+            
+            # Total de la venta
+            total_venta = "-------------------------\n"
+            total_venta += f"Total a pagar: ${venta['total']:.2f}\n"
+            total_venta += "Gracias por su compra!\n"
+            
+            # Pie del ticket
+            pie_ticket = "\n"
+            pie_ticket += "No válido como factura\n"
+            pie_ticket += "-------------------------\n"
+            pie_ticket += "*** Vuelva Pronto! ***\n"
+            
+            # Concatenación de las partes del ticket
+            ticket_completo = encabezado + info_venta + detalle_productos + total_venta + pie_ticket
+            
+            # Codificar el ticket a bytes y enviar a imprimir
+            bytes_ticket = ticket_completo.encode('utf-8')
+            win32print.WritePrinter(hprinter, bytes_ticket)
+            win32print.EndPagePrinter(hprinter)
+        finally:
+            win32print.EndDocPrinter(hprinter)
+    finally:
+        win32print.ClosePrinter(hprinter)
 
 
 # Variables globales
@@ -72,6 +122,14 @@ def cargar_productos():
         pass
 
 def guardar_venta(venta):
+    # Agrega la venta a la lista global 'ventas'
+    ventas.append(venta)
+
+     # Guarda 'ventas' en un archivo JSON
+    with open('ventas.json', 'w') as file:
+        json.dump(ventas, file)
+
+    # Ahora guarda la venta en el archivo Excel
     archivo_ventas = "ventas_totales.xlsx"
     if not os.path.exists(archivo_ventas):
         workbook = openpyxl.Workbook()
@@ -80,8 +138,19 @@ def guardar_venta(venta):
     else:
         workbook = openpyxl.load_workbook(archivo_ventas)
         sheet = workbook.active
+
+    # Agrega la venta a la hoja de Excel
     sheet.append(venta)
     workbook.save(archivo_ventas)
+
+def cargar_ventas():
+    global ventas
+    try:
+        with open('ventas.json', 'r') as file:
+            ventas = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        ventas = []
+
 
 # Inicio de Sesión
 def iniciar_sesion(usuario, contrasena, ventana_login):
@@ -348,7 +417,7 @@ def mostrar_ventana_empleado():
         boton.grid(row=i, column=0, padx=10, pady=10, sticky="nsew")
 
     ventana_empleado.mainloop()
-    
+
 
 # Función para agregar producto
 def agregar_producto():
@@ -586,10 +655,21 @@ def caja_de_cobro(ventana_padre):
         if seleccion:
             nombre_producto_seleccionado = lista_productos.get(seleccion[0])
             producto_seleccionado = next((producto for producto in productos if producto["nombre"] == nombre_producto_seleccionado), None)
+            
             if producto_seleccionado:
-                caja.append(producto_seleccionado)
-                actualizar_lista_caja()
-                actualizar_costo_total()
+                # Obtener la cantidad del producto deseada por el usuario
+                cantidad = simpledialog.askinteger("Cantidad", "Ingresa la cantidad del producto:", minvalue=1, maxvalue=100)
+                
+                if cantidad is not None and cantidad > 0:
+                    # Crear una copia del producto seleccionado con la cantidad especificada
+                    producto_con_cantidad = producto_seleccionado.copy()
+                    producto_con_cantidad['cantidad'] = cantidad
+
+                    caja.append(producto_con_cantidad)
+                    actualizar_lista_caja()
+                    actualizar_costo_total()
+                else:
+                    messagebox.showwarning("Advertencia", "Cantidad no válida")
 
     boton_agregar = ctk.CTkButton(frame, text="Agregar a Caja", command=agregar_a_caja)
     boton_agregar.grid(column=0, row=4, sticky=ctk.E)
@@ -607,18 +687,18 @@ def caja_de_cobro(ventana_padre):
 
     # Función para actualizar el costo total
     def actualizar_costo_total():
-        total = sum(p["precio"] for p in caja)
+        total = sum(p["precio"] * p["cantidad"] for p in caja)
         etiqueta_costo_total.configure(text=f"Costo Total: ${total:.2f}")
 
     # Función para actualizar la lista de productos en caja
     def actualizar_lista_caja():
-        lista_caja.delete(0, ctk.END)
-        for indice, producto in enumerate(caja, start=1):
-            lista_caja.insert(ctk.END, f"{indice}. {producto['nombre']}")
+        lista_caja.delete(0, tk.END)
+        for producto in caja:
+            lista_caja.insert(tk.END, f"{producto['nombre']} x {producto['cantidad']}")
 
     # Funciones de Método de Pago
     def realizar_cobro(metodo_pago):
-        total = sum(p["precio"] for p in caja)
+        total = sum(p["precio"] * p["cantidad"] for p in caja)
         if metodo_pago == "efectivo":
             pago_cliente = simpledialog.askfloat("Pago en Efectivo", "Cliente paga con: $", minvalue=total)
             if pago_cliente:
@@ -627,8 +707,22 @@ def caja_de_cobro(ventana_padre):
         elif metodo_pago == "tarjeta":
             messagebox.showinfo("Pago", "Verificar el pago")
 
+
         fecha_actual = datetime.now().strftime("%Y-%m-%d")
-        guardar_venta([fecha_actual, len(ventas)+1, ", ".join(p["nombre"] for p in caja), total, metodo_pago])
+         # El ID de la venta es igual al número de ventas registradas más uno
+        id_venta = len(ventas) + 1
+        venta = [fecha_actual, id_venta, ", ".join(p["nombre"] for p in caja), total, metodo_pago]
+        guardar_venta(venta)
+
+        venta_ticket = {
+            'fecha': fecha_actual,
+            'ticket_numero': id_venta,
+            'productos': caja,
+            'total': total
+        }
+
+        imprimir_ticket_windows(venta_ticket)  # Llamar a la función de impresión
+
         caja.clear()
         actualizar_lista_caja()
 
@@ -679,5 +773,6 @@ def caja_de_cobro(ventana_padre):
 
 # Inicio del programa
 if __name__ == "__main__":
+    cargar_ventas()
     cargar_productos()
     mostrar_ventana_login()
