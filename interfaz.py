@@ -19,9 +19,12 @@ def imprimir_ticket_windows(venta):
         try:
             win32print.StartPagePrinter(hprinter)
             
+            # Comando para tamaño de letra doble
+            cmd_tamano_moderado = "\x1D\x21\x01"  # Ajusta según necesidades y compatibilidad de la impresora
+
             # Encabezado del ticket
             encabezado = "*** Ice & Crepes ***\n"
-            encabezado += "Dirección de la Tienda\n"
+            encabezado += "Av. Hector Caballero #406\n"
             encabezado += "-------------------------\n"
             
             # Datos de la venta
@@ -30,7 +33,7 @@ def imprimir_ticket_windows(venta):
             info_venta += "-------------------------\n"
             
             # Detalle de los productos
-            detalle_productos = "Cant Producto       P.Unit\n"
+            detalle_productos = "Producto             P.Unit\n"
             detalle_productos += "-------------------------\n"
             for producto in venta['productos']:
                 detalle_productos += f"{producto['cantidad']:>4} {producto['nombre'][:15]:<15} {producto['precio']:>6.2f}\n"
@@ -41,13 +44,11 @@ def imprimir_ticket_windows(venta):
             total_venta += "Gracias por su compra!\n"
             
             # Pie del ticket
-            pie_ticket = "\n"
-            pie_ticket += "No válido como factura\n"
-            pie_ticket += "-------------------------\n"
-            pie_ticket += "*** Vuelva Pronto! ***\n"
+            pie_ticket = "-------------------------\n"
+            pie_ticket += "*** Vuelva Pronto! ***\n\n\n\n\n\n"
             
             # Concatenación de las partes del ticket
-            ticket_completo = encabezado + info_venta + detalle_productos + total_venta + pie_ticket
+            ticket_completo = cmd_tamano_moderado + encabezado + info_venta + detalle_productos + total_venta + pie_ticket
             
             # Codificar el ticket a bytes y enviar a imprimir
             bytes_ticket = ticket_completo.encode('utf-8')
@@ -74,6 +75,7 @@ ctk.set_widget_scaling(1.25)
 
 #funcion para centrar las ventanas
 def centrar_ventana(ventana):
+    ventana.update()
     ventana.update_idletasks()
     ancho_ventana = ventana.winfo_width()
     alto_ventana = ventana.winfo_height()
@@ -213,6 +215,7 @@ def mostrar_ventana_login():
     ventana_login = ctk.CTk()
     ventana_login.title("Inicio de Sesión")
     ventana_login.geometry("800x400")
+    centrar_ventana(ventana_login)
 
     ventana_login.attributes('-topmost', 1)  # Configura la ventana como topmost
     ventana_login.grab_set()  # Hace que la ventana sea modal
@@ -641,7 +644,7 @@ def caja_de_cobro(ventana_padre):
     frame.grid_rowconfigure(1, weight=1)
 
     # Etiqueta para mostrar el costo total
-    etiqueta_costo_total = ctk.CTkLabel(frame, text="Costo Total: $0.00")
+    etiqueta_costo_total = ctk.CTkLabel(frame, text="TOTAL: $0.00")
     etiqueta_costo_total.grid(column=0, row=2, sticky=ctk.W)
 
     # Lista de Productos en Caja con Enumeración
