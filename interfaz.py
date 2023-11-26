@@ -611,6 +611,7 @@ def modificar_producto():
 
     actualizar_option_menu_modificar()
 
+
 def caja_de_cobro(ventana_padre):
     caja = []
     ventana_cobro = ctk.CTkToplevel(ventana_padre)
@@ -621,6 +622,27 @@ def caja_de_cobro(ventana_padre):
     frame.grid(row=0, column=0, sticky="nsew")
     ventana_cobro.grid_rowconfigure(0, weight=1)
     ventana_cobro.grid_columnconfigure(0, weight=1)
+
+    iconos_caja_cobro = {
+    "Agregar": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/boton-agregar.png",
+    "Eliminar": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/basura.png",
+    "Efectivo": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/dinero.png",
+    "Tarjeta": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/tarjeta-de-credito.png",
+    "CorteCaja": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/salario.png"
+    }
+
+    def cargar_icono_redimensionado(ruta, nuevo_ancho, nuevo_alto):
+        imagen = Image.open(ruta)
+        imagen_redimensionada = imagen.resize((nuevo_ancho, nuevo_alto), Image.LANCZOS)
+        return ImageTk.PhotoImage(imagen_redimensionada)
+
+    # Carga los iconos para los botones y redimensiona
+    tamanio_icono_caja = (30, 30)  # Ajusta el tamaño según necesites
+    icono_agregar = cargar_icono_redimensionado(iconos_caja_cobro["Agregar"], *tamanio_icono_caja)
+    icono_eliminar = cargar_icono_redimensionado(iconos_caja_cobro["Eliminar"], *tamanio_icono_caja)
+    icono_efectivo = cargar_icono_redimensionado(iconos_caja_cobro["Efectivo"], *tamanio_icono_caja)
+    icono_tarjeta = cargar_icono_redimensionado(iconos_caja_cobro["Tarjeta"], *tamanio_icono_caja)
+    icono_corte_caja = cargar_icono_redimensionado(iconos_caja_cobro["CorteCaja"], *tamanio_icono_caja)
 
 
     # Buscador de Productos
@@ -674,7 +696,8 @@ def caja_de_cobro(ventana_padre):
                 else:
                     messagebox.showwarning("Advertencia", "Cantidad no válida")
 
-    boton_agregar = ctk.CTkButton(frame, text="Agregar a Caja", command=agregar_a_caja)
+    boton_agregar = ctk.CTkButton(frame, text="Agregar a Caja", command=agregar_a_caja, image=icono_agregar, compound="left")
+    boton_agregar.image = icono_agregar
     boton_agregar.grid(column=0, row=4, sticky=ctk.E)
 
     #funcion para eliminar productos de la caja
@@ -685,7 +708,8 @@ def caja_de_cobro(ventana_padre):
             actualizar_lista_caja()
             actualizar_costo_total()
 
-    boton_eliminar = ctk.CTkButton(frame, text="Eliminar de Caja", command=eliminar_de_caja)
+    boton_eliminar = ctk.CTkButton(frame, text="Eliminar de Caja", command=eliminar_de_caja, image=icono_eliminar, compound="left")
+    boton_eliminar.image = icono_eliminar
     boton_eliminar.grid(column=1, row=4, sticky=ctk.W)
 
     # Función para actualizar el costo total
@@ -730,11 +754,14 @@ def caja_de_cobro(ventana_padre):
         actualizar_lista_caja()
 
     # Funciones de Método de Pago y Corte de Caja
-    boton_efectivo = ctk.CTkButton(frame, text="Pagar con Efectivo", command=lambda: realizar_cobro("efectivo"))
-    boton_efectivo.grid(column=0, row=5, sticky=ctk.E)
+    boton_efectivo = ctk.CTkButton(frame, text="Pagar con Efectivo", command=lambda: realizar_cobro("efectivo"), image=icono_efectivo, compound="left")
+    boton_efectivo.image = icono_efectivo
+    boton_efectivo.grid(column=0, row=5, sticky=ctk.E, padx=(0,10))
 
-    boton_tarjeta = ctk.CTkButton(frame, text="Pagar con Tarjeta", command=lambda: realizar_cobro("tarjeta"))
+    boton_tarjeta = ctk.CTkButton(frame, text="Pagar con Tarjeta", command=lambda: realizar_cobro("tarjeta"), image=icono_tarjeta, compound="left")
+    boton_tarjeta.image = icono_tarjeta
     boton_tarjeta.grid(column=1, row=5, sticky=ctk.W)
+
 
     # Función para el corte de caja
     def corte_de_caja():
@@ -760,7 +787,8 @@ def caja_de_cobro(ventana_padre):
         except FileNotFoundError:
             messagebox.showerror("Error", "Archivo de ventas no encontrado.")
 
-    boton_corte_caja = ctk.CTkButton(frame, text="Corte de Caja", command=corte_de_caja)
+    boton_corte_caja = ctk.CTkButton(frame, text="Corte de Caja", command=corte_de_caja, image=icono_corte_caja, compound="left")
+    boton_corte_caja.image = icono_corte_caja
     boton_corte_caja.grid(column=1, row=6, sticky=ctk.E)
 
     frame.grid_rowconfigure(4, weight=0)
