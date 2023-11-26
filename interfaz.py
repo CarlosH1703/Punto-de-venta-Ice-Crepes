@@ -24,7 +24,7 @@ def imprimir_ticket_windows(venta):
 
             # Encabezado del ticket
             encabezado = "*** Ice & Crepes ***\n"
-            encabezado += "Av. Hector Caballero #406\n"
+            encabezado += "Av. Hector Caballero #406,\n Valles de Huinala\n"
             encabezado += "-------------------------\n"
             
             # Datos de la venta
