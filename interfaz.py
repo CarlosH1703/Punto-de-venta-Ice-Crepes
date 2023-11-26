@@ -88,7 +88,7 @@ def cargar_contraseñas():
         with open("usuarios.json", "r") as file:
             return json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
-        return {"admin": cifrar_contrasena("adminpass"), "empleado": cifrar_contrasena("empleadopass")}
+        return {"admin": cifrar_contrasena("12345"), "empleado": cifrar_contrasena("12345")}
 
 def guardar_contraseñas(usuarios):
     with open("usuarios.json", "w") as file:
