@@ -68,6 +68,8 @@ dinero_inicial_caja = 0
 entry_buscar = None  # Definir aquí para que sea accesible en todo el código
 combo_productos = None  # Definir aquí para que sea accesible en todo el código
 ventana_principal = None  # Declaración global
+RUTA_SCRIPT = os.path.dirname(os.path.realpath(__file__))
+RUTA_RESOURCES = os.path.join(RUTA_SCRIPT, "resources")
 
 customtkinter.set_appearance_mode("light")  # Modes: system (default), light, dark
 customtkinter.set_default_color_theme("green")  # Themes: blue (default), dark-blue, green
@@ -84,15 +86,18 @@ def centrar_ventana(ventana):
     ventana.geometry(f"+{x_pos}+{y_pos}")
 
 def cargar_contraseñas():
+    ruta_json = os.path.join(RUTA_RESOURCES, "usuarios.json")
     try:
-        with open("usuarios.json", "r") as file:
+        with open(ruta_json, "r") as file:
             return json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
         return {"admin": cifrar_contrasena("12345"), "empleado": cifrar_contrasena("12345")}
 
 def guardar_contraseñas(usuarios):
-    with open("usuarios.json", "w") as file:
+    ruta_json = os.path.join(RUTA_RESOURCES, "usuarios.json")
+    with open(ruta_json, "w") as file:
         json.dump(usuarios, file)
+
 
 def actualizar_contraseñas(contrasena_admin, contrasena_empleado):
     usuarios = cargar_contraseñas()
@@ -106,49 +111,48 @@ def cifrar_contrasena(contrasena):
 
 # Funciones para interactuar con Excel
 def guardar_productos():
+    ruta_archivo = os.path.join(RUTA_RESOURCES, "productos.xlsx")
     workbook = openpyxl.Workbook()
     sheet = workbook.active
     sheet.append(["Nombre", "Precio de Venta", "Cantidad en Inventario"])
     for producto in productos:
         sheet.append([producto["nombre"], producto["precio"], producto["cantidad"]])
-    workbook.save("productos.xlsx")
-
+    workbook.save(ruta_archivo)
+    
 def cargar_productos():
+    ruta_archivo = os.path.join(RUTA_RESOURCES, "productos.xlsx")
     try:
-        workbook = openpyxl.load_workbook("productos.xlsx")
+        workbook = openpyxl.load_workbook(ruta_archivo)
         sheet = workbook.active
         for row in sheet.iter_rows(min_row=2, values_only=True):
             productos.append({"nombre": row[0], "precio": row[1], "cantidad": row[2]})
     except FileNotFoundError:
         print("Archivo de productos no encontrado.")
-        pass
 
 def guardar_venta(venta):
-    # Agrega la venta a la lista global 'ventas'
+    ruta_archivo_json = os.path.join(RUTA_SCRIPT, "ventas.json")
+    ruta_archivo_xlsx = os.path.join(RUTA_SCRIPT, "ventas_totales.xlsx")
     ventas.append(venta)
 
-     # Guarda 'ventas' en un archivo JSON
-    with open('ventas.json', 'w') as file:
+    with open(ruta_archivo_json, 'w') as file:
         json.dump(ventas, file)
 
-    # Ahora guarda la venta en el archivo Excel
-    archivo_ventas = "ventas_totales.xlsx"
-    if not os.path.exists(archivo_ventas):
+    if not os.path.exists(ruta_archivo_xlsx):
         workbook = openpyxl.Workbook()
         sheet = workbook.active
         sheet.append(["Fecha", "ID Venta", "Productos", "Total Venta", "Método de Pago"])
     else:
-        workbook = openpyxl.load_workbook(archivo_ventas)
+        workbook = openpyxl.load_workbook(ruta_archivo_xlsx)
         sheet = workbook.active
 
-    # Agrega la venta a la hoja de Excel
     sheet.append(venta)
-    workbook.save(archivo_ventas)
+    workbook.save(ruta_archivo_xlsx)
 
 def cargar_ventas():
     global ventas
+    ruta_archivo = os.path.join(RUTA_SCRIPT, "ventas.json")
     try:
-        with open('ventas.json', 'r') as file:
+        with open(ruta_archivo, 'r') as file:
             ventas = json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
         ventas = []
@@ -233,7 +237,7 @@ def mostrar_ventana_login():
     frame_imagen.grid_columnconfigure(0, weight=1)
 
     # Cargar y mostrar la imagen
-    ruta_imagen = "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/10222 (1).png"
+    ruta_imagen = os.path.join(RUTA_RESOURCES, "10222.png")
     imagen = Image.open(ruta_imagen)
     imagen = imagen.resize((350, 400), Image.Resampling.LANCZOS)
     foto = ImageTk.PhotoImage(imagen)
@@ -258,7 +262,7 @@ def mostrar_ventana_login():
     titulo_sesion.grid(row=0, column=0, columnspan=2, pady=(20, 20))
 
     # Cargar y mostrar el icono TENGO QUE CAMBIARLO
-    ruta_icono = "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/usuario.png"  # Cambia esto a la ruta de tu icono
+    ruta_icono = os.path.join(RUTA_RESOURCES, "usuario.png")  # Cambia esto a la ruta de tu icono
     imagen_icono = Image.open(ruta_icono)
     imagen_icono = imagen_icono.resize((50, 50), Image.Resampling.LANCZOS)  # Ajusta el tamaño según necesites
     foto_icono = ImageTk.PhotoImage(imagen_icono)
@@ -267,7 +271,7 @@ def mostrar_ventana_login():
     label_icono.image = foto_icono  # Guarda una referencia
 
     # Cargar y mostrar el icono de usuario
-    ruta_icono_usuario = "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/grupo.png"  # Cambia esto a la ruta de tu icono de usuario
+    ruta_icono_usuario = os.path.join(RUTA_RESOURCES, "grupo.png")  # Cambia esto a la ruta de tu icono de usuario
     imagen_icono_usuario = Image.open(ruta_icono_usuario)
     imagen_icono_usuario = imagen_icono_usuario.resize((30, 30), Image.Resampling.LANCZOS)  # Ajusta el tamaño según necesites
     foto_icono_usuario = ImageTk.PhotoImage(imagen_icono_usuario)
@@ -286,7 +290,7 @@ def mostrar_ventana_login():
     entry_usuario.grid(row=2, column=1, sticky="w", padx=(0,20))
 
     # Cargar y mostrar el icono de contraseña
-    ruta_icono_contrasena = "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/candado.png"  # Cambia esto a la ruta de tu icono de contraseña
+    ruta_icono_contrasena = os.path.join(RUTA_RESOURCES, "candado.png")  # Cambia esto a la ruta de tu icono de contraseña
     imagen_icono_contrasena = Image.open(ruta_icono_contrasena)
     imagen_icono_contrasena = imagen_icono_contrasena.resize((30, 30), Image.Resampling.LANCZOS)  # Ajusta el tamaño según necesites
     foto_icono_contrasena = ImageTk.PhotoImage(imagen_icono_contrasena)
@@ -335,14 +339,13 @@ def mostrar_ventana_principal():
 
    # Definición de los iconos para los botones
     iconos = {
-        "Agregar Producto": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/boton-agregar.png",
-        "Eliminar Producto": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/contenedor-de-basura.png",
-        "Modificar Producto": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/editar.png",
-        "Modificar Contraseñas": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/rueda-dentada.png",
-        "Caja de Cobro": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/monitor.png",
-        "Salir": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/cerrar-sesion.png"
+        "Agregar Producto": os.path.join(RUTA_RESOURCES, "boton-agregar.png"),
+        "Eliminar Producto": os.path.join(RUTA_RESOURCES, "contenedor-de-basura.png"),
+        "Modificar Producto": os.path.join(RUTA_RESOURCES, "editar.png"),
+        "Modificar Contraseñas": os.path.join(RUTA_RESOURCES, "rueda-dentada.png"),
+        "Caja de Cobro": os.path.join(RUTA_RESOURCES, "monitor.png"),
+        "Salir": os.path.join(RUTA_RESOURCES, "cerrar-sesion.png")
     }
-
     # Define los botones y sus respectivas funciones
     botones_info = [
         ("Agregar Producto", agregar_producto),
@@ -393,8 +396,8 @@ def mostrar_ventana_empleado():
 
     # Definición de los iconos para los botones
     iconos = {
-        "Caja de Cobro": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/monitor.png",
-        "Salir": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/cerrar-sesion.png"
+        "Caja de Cobro": os.path.join(RUTA_RESOURCES, "monitor.png"),
+        "Salir": os.path.join(RUTA_RESOURCES, "cerrar-sesion.png")
     }
 
     # Define los botones y sus respectivas funciones
@@ -624,12 +627,12 @@ def caja_de_cobro(ventana_padre):
     ventana_cobro.grid_columnconfigure(0, weight=1)
 
     iconos_caja_cobro = {
-    "Agregar": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/boton-agregar.png",
-    "Eliminar": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/basura.png",
-    "Efectivo": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/dinero.png",
-    "Tarjeta": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/tarjeta-de-credito.png",
-    "CorteCaja": "C:/Users/zoe00/OneDrive/Escritorio/PUNTO DE VENTA ICE & CREPES/Punto-de-venta-Ice-Crepes/imagenes/salario.png"
-    }
+    "Agregar": os.path.join(RUTA_RESOURCES, "boton-agregar.png"),
+    "Eliminar": os.path.join(RUTA_RESOURCES, "basura.png"),
+    "Efectivo": os.path.join(RUTA_RESOURCES, "dinero.png"),
+    "Tarjeta": os.path.join(RUTA_RESOURCES, "tarjeta-de-credito.png"),
+    "CorteCaja": os.path.join(RUTA_RESOURCES, "salario.png")
+}
 
     def cargar_icono_redimensionado(ruta, nuevo_ancho, nuevo_alto):
         imagen = Image.open(ruta)
