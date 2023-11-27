@@ -169,8 +169,8 @@ def cargar_productos():
         print("Archivo de productos no encontrado.")
 
 def guardar_venta(venta):
-    ruta_archivo_json = os.path.join(RUTA_SCRIPT, "ventas.json")
-    ruta_archivo_xlsx = os.path.join(RUTA_SCRIPT, "ventas_totales.xlsx")
+    ruta_archivo_json = os.path.join(RUTA_RESOURCES, "ventas.json")
+    ruta_archivo_xlsx = os.path.join(RUTA_RESOURCES, "ventas_totales.xlsx")
     ventas.append(venta)
 
     with open(ruta_archivo_json, 'w') as file:
@@ -189,7 +189,7 @@ def guardar_venta(venta):
 
 def cargar_ventas():
     global ventas
-    ruta_archivo = os.path.join(RUTA_SCRIPT, "ventas.json")
+    ruta_archivo = os.path.join(RUTA_RESOURCES, "ventas.json")
     try:
         with open(ruta_archivo, 'r') as file:
             ventas = json.load(file)
@@ -669,7 +669,7 @@ def ver_ventas():
     lista_ventas.pack(expand=True, fill='both')
 
     for venta in ventas:
-        lista_ventas.insert(tk.END, f"ID Venta: {venta['ID']}, Fecha: {venta['fecha']}, Total: ${venta['total']}")
+        lista_ventas.insert(tk.END, f"ID Venta: {venta[1]}, Fecha: {venta[0]}, Total: ${venta[3]}")
 
     boton_cancelar_venta = ctk.CTkButton(ventana_ver_ventas, text="Cancelar Venta", command=lambda: cancelar_venta(lista_ventas.curselection(), ventana_ver_ventas))
     boton_cancelar_venta.pack()
@@ -683,7 +683,8 @@ def cancelar_venta(seleccion, ventana_ver_ventas):
         del ventas[indice_venta]
 
         # Actualizar el archivo JSON
-        with open(os.path.join(RUTA_SCRIPT, "ventas.json"), 'w') as file:
+        ruta_archivo_json = os.path.join(RUTA_RESOURCES, "ventas.json")
+        with open(ruta_archivo_json, 'w') as file:
             json.dump(ventas, file)
 
         # Actualizar el archivo Excel
@@ -695,7 +696,7 @@ def cancelar_venta(seleccion, ventana_ver_ventas):
         messagebox.showwarning("Advertencia", "Por favor, selecciona una venta para cancelar")
 
 def actualizar_archivo_excel():
-    ruta_archivo_xlsx = os.path.join(RUTA_SCRIPT, "ventas_totales.xlsx")
+    ruta_archivo_xlsx = os.path.join(RUTA_RESOURCES, "ventas_totales.xlsx")
     workbook = openpyxl.Workbook()
     sheet = workbook.active
     sheet.append(["Fecha", "ID Venta", "Productos", "Total Venta", "Método de Pago"])
@@ -861,7 +862,8 @@ def caja_de_cobro(ventana_padre):
     # Función para el corte de caja
     def corte_de_caja():
         try:
-            workbook = openpyxl.load_workbook("ventas_totales.xlsx")
+            ruta_archivo_xlsx = os.path.join(RUTA_RESOURCES, "ventas_totales.xlsx")
+            workbook = openpyxl.load_workbook(ruta_archivo_xlsx)  # Usa la ruta correcta aquí
             sheet = workbook.active
 
             fecha_actual = datetime.now().strftime("%Y-%m-%d")
@@ -881,6 +883,7 @@ def caja_de_cobro(ventana_padre):
 
         except FileNotFoundError:
             messagebox.showerror("Error", "Archivo de ventas no encontrado.")
+
 
     boton_corte_caja = ctk.CTkButton(frame, text="Corte de Caja", command=corte_de_caja, image=icono_corte_caja, compound="left")
     boton_corte_caja.image = icono_corte_caja
