@@ -125,6 +125,29 @@ def actualizar_contraseñas(contrasena_admin, contrasena_empleado):
 def cifrar_contrasena(contrasena):
     return hashlib.sha256(contrasena.encode()).hexdigest()
 
+
+def manejar_dinero_inicial():
+    ruta_archivo = os.path.join(RUTA_RESOURCES, "dinero_inicial.json")
+    fecha_actual = datetime.now().strftime("%Y-%m-%d")
+
+    # Verifica si el archivo ya existe
+    if os.path.isfile(ruta_archivo):
+        with open(ruta_archivo, 'r') as archivo:
+            try:
+                datos = json.load(archivo)
+                # Verifica si la fecha guardada es la actual
+                if datos.get('fecha') == fecha_actual:
+                    return datos.get('dinero_inicial')
+            except json.JSONDecodeError:
+                # Manejo de un posible error de decodificación JSON (archivo vacío o malformado)
+                pass
+
+    # Pide el dinero inicial y lo guarda si no hay datos válidos para la fecha actual
+    dinero_inicial = float(simpledialog.askstring("Dinero Inicial", "Por favor, ingresa el efectivo inicial en caja: $"))
+    with open(ruta_archivo, 'w') as archivo:
+        json.dump({'fecha': fecha_actual, 'dinero_inicial': dinero_inicial}, archivo)
+    return dinero_inicial
+
 # Funciones para interactuar con Excel
 def guardar_productos():
     ruta_archivo = os.path.join(RUTA_RESOURCES, "productos.xlsx")
@@ -182,8 +205,11 @@ def iniciar_sesion(usuario, contrasena, ventana_login):
         global tipo_usuario
         tipo_usuario = usuario
         ventana_login.destroy()
+        
+        # Llama a manejar_dinero_inicial en lugar de simpledialog.askstring
         global dinero_inicial_caja
-        dinero_inicial_caja = float(simpledialog.askstring("Dinero Inicial", "Por favor, ingresa el efectivo inicial en caja: $"))
+        dinero_inicial_caja = manejar_dinero_inicial()
+        
         if tipo_usuario == "admin":
             mostrar_ventana_principal()
         elif tipo_usuario == "empleado":
@@ -360,6 +386,7 @@ def mostrar_ventana_principal():
         "Modificar Producto": os.path.join(RUTA_RESOURCES, "editar.png"),
         "Modificar Contraseñas": os.path.join(RUTA_RESOURCES, "rueda-dentada.png"),
         "Caja de Cobro": os.path.join(RUTA_RESOURCES, "monitor.png"),
+        "Ventas": os.path.join(RUTA_RESOURCES, "informe-de-venta.png"),
         "Salir": os.path.join(RUTA_RESOURCES, "cerrar-sesion.png")
     }
     # Define los botones y sus respectivas funciones
@@ -369,6 +396,7 @@ def mostrar_ventana_principal():
         ("Modificar Producto", modificar_producto),
         ("Modificar Contraseñas", ventana_modificar_contrasenas),
         ("Caja de Cobro", lambda: caja_de_cobro(ventana_principal)),
+        ("Ventas", ver_ventas),
         ("Salir", ventana_principal.destroy)
     ]
 
@@ -629,6 +657,54 @@ def modificar_producto():
         child.grid_configure(padx=5, pady=5)
 
     actualizar_option_menu_modificar()
+
+def ver_ventas():
+    ventana_ver_ventas = ctk.CTkToplevel()
+    ventana_ver_ventas.title("Ventas")
+    centrar_ventana(ventana_ver_ventas)
+    ventana_ver_ventas.geometry("800x400")
+    centrar_ventana(ventana_ver_ventas)
+
+    lista_ventas = tk.Listbox(ventana_ver_ventas)
+    lista_ventas.pack(expand=True, fill='both')
+
+    for venta in ventas:
+        lista_ventas.insert(tk.END, f"ID Venta: {venta['ID']}, Fecha: {venta['fecha']}, Total: ${venta['total']}")
+
+    boton_cancelar_venta = ctk.CTkButton(ventana_ver_ventas, text="Cancelar Venta", command=lambda: cancelar_venta(lista_ventas.curselection(), ventana_ver_ventas))
+    boton_cancelar_venta.pack()
+
+def cancelar_venta(seleccion, ventana_ver_ventas):
+    if seleccion:
+        indice_venta = seleccion[0]
+        venta_seleccionada = ventas[indice_venta]
+
+        # Eliminar de la lista en memoria
+        del ventas[indice_venta]
+
+        # Actualizar el archivo JSON
+        with open(os.path.join(RUTA_SCRIPT, "ventas.json"), 'w') as file:
+            json.dump(ventas, file)
+
+        # Actualizar el archivo Excel
+        actualizar_archivo_excel()
+
+        ventana_ver_ventas.destroy()
+        messagebox.showinfo("Cancelación", f"La venta ha sido cancelada.")
+    else:
+        messagebox.showwarning("Advertencia", "Por favor, selecciona una venta para cancelar")
+
+def actualizar_archivo_excel():
+    ruta_archivo_xlsx = os.path.join(RUTA_SCRIPT, "ventas_totales.xlsx")
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.append(["Fecha", "ID Venta", "Productos", "Total Venta", "Método de Pago"])
+
+    for venta in ventas:
+        sheet.append([venta['fecha'], venta['ID'], ", ".join(p['nombre'] for p in venta['productos']), venta['total'], venta['metodo_pago']])
+
+    workbook.save(ruta_archivo_xlsx)
+
 
 
 def caja_de_cobro(ventana_padre):
