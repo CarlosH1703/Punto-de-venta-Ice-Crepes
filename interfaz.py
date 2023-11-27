@@ -4,12 +4,28 @@ import customtkinter as ctk
 import customtkinter
 from customtkinter import CTkImage
 import openpyxl
-import os, json, hashlib
+import os, json, hashlib, sys
 from datetime import datetime
 from PIL import Image, ImageTk
 from escpos.printer import Usb
 import win32print
 import win32ui
+
+#necesario para recourses
+# Determinar si estamos en el entorno congelado de PyInstaller
+if getattr(sys, 'frozen', False):
+    # Si es así, la ruta al directorio de trabajo es el directorio del sistema donde está el ejecutable
+    application_path = os.path.dirname(sys.executable)
+else:
+    # De lo contrario, estamos en un entorno de desarrollo normal y usamos la ruta del script
+    application_path = os.path.dirname(__file__)
+
+# Construir la ruta al directorio 'resources' relativa al entorno de trabajo
+resources_path = os.path.join(application_path, 'resources')
+
+# Utilizar resources_path para acceder a archivos dentro de la carpeta 'resources'
+some_file_path = os.path.join(resources_path, 'some_file.ext')
+
 
 def imprimir_ticket_windows(venta):
     nombre_impresora = "POS-58"  # Reemplaza con el nombre exacto de tu impresora
