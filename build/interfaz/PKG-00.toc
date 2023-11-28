@@ -1,4 +1,5 @@
-('C:\\Users\\zoe00\\OneDrive\\Escritorio\\Punto-de-venta-Ice-Crepes\\build\\interfaz\\interfaz.pkg',
+('C:\\Users\\zoe00\\OneDrive\\Escritorio\\Punto-de-venta-Ice-Crepes\\build\\interfaz\\Punto '
+ 'de Venta Ice&Crepes.pkg',
  {'BINARY': True,
   'DATA': True,
   'EXECUTABLE': True,
